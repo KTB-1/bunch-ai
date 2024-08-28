@@ -210,3 +210,49 @@ def get_decoded_summaries():
         if connection.is_connected():
             cursor.close()
             connection.close()
+
+def get_decoded_summaries_modified_V1():
+    connection = create_connection()
+    if connection is None:
+        return []
+
+    cursor = connection.cursor(dictionary=True)
+    query = """
+        SELECT news_id, summary 
+        FROM News 
+        WHERE summary IS NOT NULL 
+        AND summary != '' 
+        AND (embedding = 0 OR embedding IS NULL)
+    """
+
+    try:
+        cursor.execute(query)
+        results = cursor.fetchall()
+        decoded_summaries = []
+
+        for row in results:
+            try:
+                decoded_summary = json.loads(row['summary'])
+                decoded_summaries.append({
+                    'news_id': row['news_id'],
+                    'summary': decoded_summary
+                })
+                
+                # embedding 값을 1로 업데이트
+                update_query = "UPDATE News SET embedding = 1 WHERE news_id = %s"
+                cursor.execute(update_query, (row['news_id'],))
+                connection.commit()
+                
+            except json.JSONDecodeError as e:
+                logging.error(f"JSON 디코딩 오류 (news_id: {row['news_id']}): {e}")
+        
+        return decoded_summaries
+
+    except Error as e:
+        logging.error(f"데이터 조회 오류: {e}")
+        return []
+
+    finally:
+        if connection.is_connected():
+            cursor.close()
+            connection.close()
