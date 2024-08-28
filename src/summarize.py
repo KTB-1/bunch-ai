@@ -51,6 +51,8 @@ format_instructions = output_parser.get_format_instructions()
 prompt_template = PromptTemplate.from_template(template_string)
 
 def summarize_news():
+    logging.info("=" * 50)
+    logging.info("뉴스 요약 프로세스 시작..")
     news_items = get_news_without_summary()
     
     for news in news_items:
@@ -59,7 +61,7 @@ def summarize_news():
         formatted_prompt = prompt_template.format(text=news_content, format_instructions=format_instructions)
         
         try:
-            customer_response = model(formatted_prompt)
+            customer_response = model.invoke(formatted_prompt)
             output_dict = output_parser.parse(customer_response)
             summary_json = json.dumps(output_dict)
             update_news_summary(news['news_id'], summary_json)
