@@ -48,7 +48,8 @@ SNSNE/
 ![alt text](/img/image.png)
 
 ## 실행 방법
-0. 반드시 `src/.env` 파일을 받거나 만들어서 시작
+
+- 주의!! 반드시 `src/.env` 파일을 받거나 만들어서 시작
 
 1. python=3.10.11 가상환경 생성 후, requirements.txt 파일을 이용해 패키지 설치
 - requirements.txt로 패키지 설치가 안될 경우, `최후의수단.txt`로 라이브러리 직접 설치
@@ -74,6 +75,7 @@ pip list
 
 2-1. Docker를 사용하지 않는 경우, MariaDB 서버를 로컬 시스템에 설치
     - (참고 : DBeaver를 사용해 MariaDB 연결하면 유지보수 용이)
+    - DB 관련 설정은 `src/.env` 파일에서 수정하면 적용됩니다.
 
 3. `src/create_table.sql` 코드를 참고해서 MariaDB에 테이블 생성
 
