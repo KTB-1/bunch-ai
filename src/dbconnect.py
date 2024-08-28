@@ -3,6 +3,7 @@ from sqlalchemy import create_engine, text
 import logging
 from config import MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE
 from config import setup_logging
+import json
 
 setup_logging()
 
@@ -44,11 +45,11 @@ def get_and_update_embedding_zero_rows():
     engine = create_connection_mariadb()
     
     try:
-        # SQL 쿼리 실행하여 embeddings 값이 0인 행을 가져옴
+        # SQL 쿼리 실행하여 embedding 값이 0인 행을 가져옴
         query = "SELECT * FROM News WHERE embedding IS NULL"
         df = pd.read_sql(query, con=engine)
         
-        # 가져온 데이터가 있으면 embeddings 값을 1로 업데이트
+        # 가져온 데이터가 있으면 embedding 값을 1로 업데이트
         if not df.empty:
             update_query = "UPDATE News SET embedding = 1 WHERE embedding IS NULL"
             with engine.connect() as conn:
@@ -61,6 +62,25 @@ def get_and_update_embedding_zero_rows():
         return df
     except Exception as e:
         logging.error(f"News 데이터를 가져오고 업데이트하는 중 오류 발생: {e}")
+        return None
+    finally:
+        engine.dispose()
+
+def get_userID_from_usernewsviews(user_id, k):
+    engine = create_connection_mariadb()
+
+    try:
+        # SQL 쿼리 실행
+        query = f"""
+            SELECT * FROM UserNewsViews 
+            WHERE user_id = {user_id} 
+            ORDER BY view_date DESC 
+            LIMIT {k}
+        """
+        df = pd.read_sql(query, con=engine)
+        return df
+    except Exception as e:
+        logging.error(f"user_id 데이터를 가져오는 중 오류 발생: {e}")
         return None
     finally:
         engine.dispose()
@@ -79,12 +99,74 @@ def get_user_news_views_data():
     finally:
         engine.dispose()
 
+def get_news_summaries_by_usernewsviews(df_usernewsviews):
+    engine = create_connection_mariadb()
+    
+    news_data = []
+    
+    try:
+        with engine.connect() as conn:
+            for _, row in df_usernewsviews.iterrows():
+                news_id = row['news_id']
+                
+                # SQL 쿼리 실행: news_id와 summary만 선택
+                query = f"SELECT news_id, summary FROM News WHERE news_id = {news_id}"
+                df_news = pd.read_sql(query, con=conn)
+                
+                if not df_news.empty:
+                    news_row = df_news.iloc[0].to_dict()
+                    
+                    # summary 컬럼을 디코딩
+                    if 'summary' in news_row:
+                        try:
+                            news_row['summary'] = json.loads(news_row['summary'])
+                        except json.JSONDecodeError as e:
+                            logging.error(f"JSON 디코딩 오류 (news_id: {news_id}): {e}")
+                            news_row['summary'] = None
+                    
+                    news_data.append(news_row)
+            
+            # 리스트 형태로 반환
+            return news_data
+    except Exception as e:
+        logging.error(f"News 데이터를 가져오는 중 오류 발생: {e}")
+        return None
+    finally:
+        engine.dispose()
+
+def insert_user_news_views_data(df):
+    engine = create_connection_mariadb()
+    
+    try:
+        with engine.connect() as conn:
+            # DataFrame에서 각 행을 읽어와서 UserNewsViews 테이블에 삽입
+            for _, row in df.iterrows():
+                # 예시로 user_id를 1로 설정, news_id와 view_date는 DataFrame에서 가져옴
+                user_id = 1
+                news_id = row['news_id']
+                view_date = pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')
+
+                # 삽입 쿼리 실행
+                query = text("""
+                    INSERT INTO UserNewsViews (user_id, news_id, view_date)
+                    VALUES (:user_id, :news_id, :view_date)
+                """)
+                conn.execute(query, {'user_id': user_id, 'news_id': news_id, 'view_date': view_date})
+            
+            conn.commit()
+            print("UserNewsViews 테이블에 샘플 데이터가 성공적으로 추가되었습니다.")
+    
+    except Exception as e:
+        logging.error(f"UserNewsViews 테이블에 데이터를 삽입하는 중 오류 발생: {e}")
+    finally:
+        engine.dispose()
+
 # df = get_embeddings_zero_rows()
 # df = get_and_update_embeddings_zero_rows()
 # df = get_embeddings_zero_rows()
-df = get_user_news_views_data()
+# df = get_user_news_views_data()
 
-if df is not None:
-    print(df.head())
-else:
-    print("데이터를 가져오지 못했습니다.")
+# if df is not None:
+#     print(df.head())
+# else:
+#     print("데이터를 가져오지 못했습니다.")
