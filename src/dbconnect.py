@@ -66,6 +66,49 @@ def get_and_update_embedding_zero_rows():
     finally:
         engine.dispose()
 
+def get_decoded_summaries(news_ids):
+    # 데이터베이스 연결 생성
+    engine = create_connection_mariadb()
+    
+    # SQL 쿼리 작성
+    query = """
+        SELECT news_id, summary 
+        FROM News 
+        WHERE news_id IN :news_ids
+        AND summary IS NOT NULL 
+        AND summary != ''
+    """
+
+    # SQLAlchemy를 사용하여 쿼리 실행 및 결과 가져오기
+    try:
+        with engine.connect() as connection:
+            result = connection.execute(text(query), {'news_ids': tuple(news_ids)})
+            rows = result.fetchall()
+
+            decoded_summaries = []
+            
+            for row in rows:
+                news_id = row[0]
+                summary_json = row[1]
+
+                try:
+                    # JSON 디코딩
+                    decoded_summary = json.loads(summary_json)
+                    decoded_summaries.append({
+                        'news_id': news_id,
+                        'summary': decoded_summary
+                    })
+                    
+                except json.JSONDecodeError as e:
+                    logging.error(f"JSON 디코딩 오류 (news_id: {row['news_id']}): {e}")
+            
+            # 결과 반환
+            return decoded_summaries
+
+    except Exception as e:
+        logging.error(f"데이터 조회 오류: {e}")
+        return []
+
 def get_userID_from_usernewsviews(user_id, k):
     engine = create_connection_mariadb()
 
