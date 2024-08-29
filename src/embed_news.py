@@ -54,11 +54,17 @@ def get_data_and_store_chroma():
 def recc_item(userid, cnt):
 
     df = get_userID_from_usernewsviews(user_id=userid, k=cnt)
-    print(df)
+    # print(df)
 
+    ### result_list 로 가져오는 개수 조정 (date 에 따라서)
     result_list = get_news_summaries_by_usernewsviews(df)
-    print(result_list)
-
+    result_list = result_list[:5]
+    # print(result_list)
+    
+    check_same = []
+    for it, tmp in enumerate(result_list):
+        check_same.append(tmp['news_id'])
+ 
     embedding_model = OllamaEmbeddings(model="gemma2:2b")
 
     chroma_client = Chroma(
@@ -68,22 +74,32 @@ def recc_item(userid, cnt):
         persist_directory="chroma_langchain_db",
     )
 
+    recc_list = []
     for row in result_list:
         query = row['summary']['point_1'] + ' ' + row['summary']['point_2'] + ' ' + row['summary']['point_3']
         results = chroma_client.similarity_search_with_score(query=query, k=5)
-
-        # 4. 결과 출력
+        
         for i, (result, score) in enumerate(results, 1):
-            print(f"Article {i}:")
-            print(f"Score: {score}")
-            print(f"Description: {result.page_content}")
-            print(f"Metadata: {result.metadata}")
-            print()
+            recc_list.append(int(result.metadata['news_id']))
+
+        # # 결과 출력
+        # for i, (result, score) in enumerate(results, 1):
+        #     print(f"Article {i}:")
+        #     print(f"Score: {score}")
+        #     print(f"Description: {result.page_content}")
+        #     print(f"Metadata: {result.metadata}")
+        #     print()
+
+    recc_list = [item for item in recc_list if item not in check_same]
+    recc_list = list(set(recc_list))
+    # print(recc_list)
+
+    return recc_list
 
 if __name__ == "__main__":
     # get_data_and_store_chroma()
     
-    recc_item(1, 5)
+    recc_item(1, 3)
 
     # df = get_embedding_zero_rows()
     # print(df)
@@ -104,3 +120,4 @@ if __name__ == "__main__":
 # Description 길이가 일정해야 가장 좋은 성능을 보임.
 # user_id와 news_id가 같은 경우, view_date를 update 해야할 듯
 # view_date, publication_date 형식 일정하게 하는게 좋음.
+# 테이블에서 오래된 뉴스 삭제 필요.
