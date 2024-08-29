@@ -33,18 +33,18 @@ def recommend_lightfm(model, userid, interactions, dataset, pivot_df, top_n=10):
 
     # 모든 뉴스에 대한 점수를 예측
     scores = model.predict(userid - 1, np.arange(n_items))
-    print(scores)
+    # print(scores)
 
     # 사용자가 이미 본 뉴스 아이디 가져오기
     user_interactions = pivot_df.loc[userid]
     seen_newsid = user_interactions[user_interactions > 0].index.tolist()
     seen_newsid = [x - 1 for x in seen_newsid]
-    print(seen_newsid)
+    # print(seen_newsid)
 
     # 이미 본 뉴스 아이디는 제외하고 상위 추천 리스트 생성
     unseen_scores = [(i, score) for i, score in enumerate(scores) if i not in seen_newsid]
     unseen_scores.sort(key=lambda x: x[1], reverse=True)
-    print(unseen_scores)
+    # print(unseen_scores)
 
     # 상위 N개 추천
     top_items = [item[0] for item in unseen_scores[:top_n]]
@@ -56,11 +56,16 @@ def recommend_lightfm(model, userid, interactions, dataset, pivot_df, top_n=10):
 
     return recommended_newsid
 
-# # 사용 예
-# userID = 4
-# (model, interactions, dataset, pivot_df) = make_matrix()
-# recommended_newsid = recommend_lightfm(model, userID, interactions, dataset, pivot_df)
-# print(recommended_newsid)
+def recc_matrix(userid, cnt):
+    userID = userid
+    topK = cnt
+
+    (model, interactions, dataset, pivot_df) = make_matrix()
+    recommended_newsid = recommend_lightfm(model, userID, interactions, dataset, pivot_df, top_n=topK)
+    
+    return recommended_newsid
+
+recc_matrix(1, 3)
 
 # userid 가 맵핑된 번호로 들어오면 오류 생길 수 있음 -> 고려해야함
 #
