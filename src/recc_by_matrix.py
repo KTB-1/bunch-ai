@@ -2,10 +2,23 @@ from lightfm import LightFM
 from lightfm.data import Dataset
 from lightfm.evaluation import auc_score
 import numpy as np
+import pandas as pd
+from datetime import datetime, timedelta
 from dbconnect import get_user_news_views_data
 
 def make_matrix():
     df = get_user_news_views_data()
+
+    ###
+    # view_date를 datetime 형식으로 변환
+    df['view_date'] = pd.to_datetime(df['view_date'], format='%Y-%m-%d %H:%M:%S')
+
+    # 현재 시간으로부터 5일 전의 날짜 계산
+    cutoff_date = datetime.now() - timedelta(days=5)
+
+    # 5일보다 오래된 날짜의 행 삭제
+    df = df[df['view_date'] >= cutoff_date]
+    ###
 
     # 사용자가 뉴스를 봤음을 나타내기 위해 view_date를 1로 설정
     df['view_date'] = 1
