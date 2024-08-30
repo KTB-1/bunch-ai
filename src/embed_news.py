@@ -12,6 +12,7 @@ from dbconnect import create_connection_mariadb, get_embedding_zero_rows, get_an
 from dbconnect import get_userID_from_usernewsviews, get_user_news_views_data, insert_user_news_views_data
 from dbconnect import get_news_summaries_by_usernewsviews
 from database import get_decoded_summaries_modified_V1
+from datetime import datetime, timedelta
 
 def get_data_and_store_chroma():
     
@@ -55,6 +56,18 @@ def recc_item(userid, cnt):
 
     df = get_userID_from_usernewsviews(user_id=userid, k=cnt)
     # print(df)
+
+    print(df.columns)
+    ###
+    # view_date를 datetime 형식으로 변환
+    df['view_date'] = pd.to_datetime(df['view_date'], format='%Y-%m-%d %H:%M:%S')
+
+    # 현재 시간으로부터 5일 전의 날짜 계산
+    cutoff_date = datetime.now() - timedelta(days=5)
+
+    # 5일보다 오래된 날짜의 행 삭제
+    df = df[df['view_date'] >= cutoff_date]
+    ###
 
     ### result_list 로 가져오는 개수 조정 (date 에 따라서)
     result_list = get_news_summaries_by_usernewsviews(df)
@@ -108,16 +121,3 @@ if __name__ == "__main__":
     #     insert_user_news_views_data(df)
     # else:
     #     print("추가할 데이터가 없습니다.")
-
-# O # kaggle dataset으로 item-user matrix 계산 확인
-# O # gemma2 vs llama3.1 k=100으로 판단
-# mariaDB 연결 확인
-# flask로 api 만들기?
-# O # add texts => add docu
-# X # huggingface --> model 제한, fine-tuning한 모델 사용 불가
-# X # newsapi --> korean news api 지원 x
-# 개인 미션
-# Description 길이가 일정해야 가장 좋은 성능을 보임.
-# user_id와 news_id가 같은 경우, view_date를 update 해야할 듯
-# view_date, publication_date 형식 일정하게 하는게 좋음.
-# 테이블에서 오래된 뉴스 삭제 필요.
