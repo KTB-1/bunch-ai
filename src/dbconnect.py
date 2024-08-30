@@ -72,7 +72,7 @@ def get_decoded_summaries(news_ids):
     
     # SQL 쿼리 작성
     query = """
-        SELECT news_id, summary 
+        SELECT news_id, news_url, title, summary 
         FROM News 
         WHERE news_id IN :news_ids
         AND summary IS NOT NULL 
@@ -89,13 +89,17 @@ def get_decoded_summaries(news_ids):
             
             for row in rows:
                 news_id = row[0]
-                summary_json = row[1]
+                news_url = row[1]
+                news_title = row[2]
+                summary_json = row[3]
 
                 try:
                     # JSON 디코딩
                     decoded_summary = json.loads(summary_json)
                     decoded_summaries.append({
                         'news_id': news_id,
+                        'news_url': news_url,
+                        'title': news_title,
                         'summary': decoded_summary
                     })
                     
