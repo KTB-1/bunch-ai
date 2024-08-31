@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # 모델 다운로드
 ollama run gemma2
 
