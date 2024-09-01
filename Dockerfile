@@ -5,6 +5,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
+RUN apt-get update && apt-get install -y curl
 RUN curl -fsSL https://ollama.com/install.sh | sh
 
 COPY ./src ./src
