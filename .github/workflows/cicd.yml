@@ -68,13 +68,13 @@ jobs:
             docker rm bunch-ai || true  # 컨테이너가 없으면 오류 무시
 
             docker pull ${{ secrets.DOCKER_USERNAME }}/bunch-ai:latest
-            docker run -d -p 8082:8080 --name bunch-ai --rm ${{ secrets.DOCKER_USERNAME }}/bunch-ai:latest
+            docker run -d -p 11434:11434 --name bunch-ai --rm ${{ secrets.DOCKER_USERNAME }}/bunch-ai:latest
 
       - name: 컨테이너 실행 테스트
         run: |
           sleep 20  # 애플리케이션 시작될 시간
           # 서버 상태 확인
-          HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}" http://${{ secrets.AWS_SSH_HOST }}:8082/)
+          HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}" http://${{ secrets.AWS_SSH_HOST }}:11434/)
           if [ "$HTTP_STATUS" -ne 200 ] && [ "$HTTP_STATUS" -ne 404 ]; then
             echo "Unexpected HTTP status: $HTTP_STATUS"
             exit 1
