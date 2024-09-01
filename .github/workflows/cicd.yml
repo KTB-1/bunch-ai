@@ -67,7 +67,7 @@ jobs:
             docker stop bunch-ai || true  # 컨테이너가 없으면 오류 무시
             docker rm bunch-ai || true  # 컨테이너가 없으면 오류 무시
 
-            docker pull ${{ secrets.DOCKER_USERNAME }}/bunch:latest
+            docker pull ${{ secrets.DOCKER_USERNAME }}/bunch-ai:latest
             docker run -d -p 8082:8080 --name bunch-ai --rm ${{ secrets.DOCKER_USERNAME }}/bunch-ai:latest
 
       - name: 컨테이너 실행 테스트
