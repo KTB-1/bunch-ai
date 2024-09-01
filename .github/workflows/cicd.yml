@@ -26,3 +26,65 @@ jobs:
       run: |
           docker build -t ${{ secrets.DOCKER_USERNAME }}/bunch-ai:latest .
           docker push ${{ secrets.DOCKER_USERNAME }}/bunch-ai:latest
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Public IP
+        id: ip
+        uses: haythem/public-ip@v1.3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-2
+
+      - name: Public IP를 보안 그룹에 추가
+        run: |
+          aws ec2 authorize-security-group-ingress \
+          --group-id ${{ secrets.AWS_SG_ID }} \
+          --protocol tcp --port 22 \
+          --cidr ${{ steps.ip.outputs.ipv4 }}/32
+
+      - name: SSH 접속 후 실행
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.AWS_SSH_HOST }}
+          username: ${{ secrets.AWS_SSH_USER }}
+          key: ${{ secrets.AWS_SSH_KEY }}
+          script_stop: true
+          script: |
+            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+            
+            # 기존 Docker 이미지 정리
+            docker image prune -f
+
+            # 기존 컨테이너를 멈추고 제거
+            docker stop bunch-ai || true  # 컨테이너가 없으면 오류 무시
+            docker rm bunch-ai || true  # 컨테이너가 없으면 오류 무시
+
+            docker pull ${{ secrets.DOCKER_USERNAME }}/bunch:latest
+            docker run -d -p 8082:8080 --name bunch-ai --rm ${{ secrets.DOCKER_USERNAME }}/bunch-ai:latest
+
+      - name: 컨테이너 실행 테스트
+        run: |
+          sleep 20  # 애플리케이션 시작될 시간
+          # 서버 상태 확인
+          HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}" http://${{ secrets.AWS_SSH_HOST }}:8082/)
+          if [ "$HTTP_STATUS" -ne 200 ] && [ "$HTTP_STATUS" -ne 404 ]; then
+            echo "Unexpected HTTP status: $HTTP_STATUS"
+            exit 1
+          fi
+          echo "Server is running with HTTP status: $HTTP_STATUS"
+
+      - name: Public IP를 보안 그룹에서 제거
+        run: |
+          aws ec2 revoke-security-group-ingress \
+          --group-id ${{ secrets.AWS_SG_ID }} \
+          --protocol tcp \
+          --port 22 \
+          --cidr ${{ steps.ip.outputs.ipv4 }}/32
