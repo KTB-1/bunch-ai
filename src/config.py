@@ -51,3 +51,7 @@ CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", 30))
 TIMEOUT = int(os.getenv("TIMEOUT", 30))
 MAX_RETRIES = int(os.getenv("MAX_RETRIES", 2))
 RETRY_DELAY = int(os.getenv("RETRY_DELAY", 1))
+
+# ChromaDB 설정
+CHROMADB_HOST = os.getenv("CHROMA_HOST", "localhost")
+CHROMADB_PORT = int(os.getenv("CHROMA_PORT", 8000))
