@@ -15,6 +15,15 @@ from database import get_decoded_summaries_modified_V1
 from datetime import datetime, timedelta
 from config import CHROMADB_HOST, CHROMADB_PORT
 
+def remove_duplicates(lst):
+    seen = set()
+    result = []
+    for item in lst:
+        if item not in seen:
+            result.append(item)
+            seen.add(item)
+    return result
+
 def get_data_and_store_chroma():
     
     summaries = get_decoded_summaries_modified_V1()
@@ -223,13 +232,23 @@ def http_recc_item(userid, cnt):
             # where=,
             # where_document=,
         )
-        for item in results['ids'][0]:
-            recc_list.append(int(item))
+        # for item in results['ids'][0]:
+        #     recc_list.append(int(item))
+        for it in range(len(results['ids'][0])):
+            recc_list.append((int(results['ids'][0][it]), results['distances'][0][it]))
 
-    recc_list = [item for item in recc_list if item not in check_same]
-    recc_list = list(set(recc_list))
+    unseen_scores = [score for i, score in enumerate(recc_list) if i not in check_same]
+    unseen_scores.sort(key=lambda x: x[1], reverse=False)
+    
+    top_items = [item[0] for item in unseen_scores]
+    top_items = remove_duplicates(top_items)
 
-    return recc_list
+    return top_items
+
+    # recc_list = [item for item in recc_list if item not in check_same]
+    # recc_list = list(set(recc_list))
+
+    # return recc_list
 
 if __name__ == "__main__":
     # get_data_and_store_chroma()
