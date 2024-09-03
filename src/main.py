@@ -3,6 +3,7 @@ import asyncio
 from async_scrape_newspaper3k import main as scrape_main
 from summarize import summarize_news
 from database import create_tables
+from embed_news import get_data_and_store_chroma, http_chroma
 
 # aidb 데이터베이스, 테이블 없는 경우 생성
 create_tables()
@@ -14,6 +15,11 @@ async def main():
     fetch_all_news()  # 뉴스 데이터 가져오기
     await scrape_main() # 뉴스 url에서 본문만 스크랩
     summarize_news() # gemma2 사용해 뉴스 분석
+    
+    ## persistent client
+    # get_data_and_store_chroma()
+    ## http client
+    http_chroma()
 
 if __name__ == "__main__":
     asyncio.run(main())
