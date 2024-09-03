@@ -4,7 +4,7 @@ import pymysql
 import json
 from config import MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE
 from recc_by_matrix import recc_matrix
-from embed_news import recc_item
+from embed_news import recc_item, http_recc_item
 from dbconnect import get_decoded_summaries
 import numpy as np
 
@@ -47,7 +47,8 @@ def get_recommendations():
     
     # 추천 리스트 가져오기
     recommended_newsid1 = recc_matrix(userid, cnt)
-    recommended_newsid2 = recc_item(userid, cnt)
+    # recommended_newsid2 = recc_item(userid, cnt)
+    recommended_newsid2 = http_recc_item(userid, cnt)
 
     tmp_newsid = recommended_newsid1 + recommended_newsid2
     recommended_newsid = list(set(tmp_newsid))
