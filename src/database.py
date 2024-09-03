@@ -114,7 +114,7 @@ def get_news_without_content():
         results = cursor.fetchall()
         return [result[0] for result in results]
     except Error as e:
-        logging.error(f"데이터 조회 오류: {e}")
+        logging.error(f"DB 데이터 조회 오류: {e}")
         return []
     finally:
         if connection.is_connected():
@@ -132,9 +132,9 @@ def update_news_content(news_url, content):
     try:
         cursor.execute(query, (content, news_url))
         connection.commit()
-        logging.info(f"뉴스 내용 업데이트 완료: {news_url}")
+        logging.info(f"뉴스 내용 DB에 업데이트 완료: {news_url}")
     except Error as e:
-        logging.error(f"데이터 업데이트 오류: {e}")
+        logging.error(f"DB 데이터 업데이트 오류: {e}")
     finally:
         if connection.is_connected():
             cursor.close()

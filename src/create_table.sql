@@ -20,3 +20,6 @@ CREATE TABLE IF NOT EXISTS UserNewsViews (
         view_date VARCHAR(255),
         FOREIGN KEY (news_id) REFERENCES News(news_id)
 );
+
+-- 데이터만 삭제
+DELETE FROM News;
