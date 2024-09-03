@@ -6,19 +6,29 @@ import time
 # .env 파일 로드
 load_dotenv()
 
-# 실행용 : Naver news API 호출 시 설정
+"""실행용 시작"""
+# 반복 시간
+# ROOP_TIME = 60 
+
+# Naver news API 호출 시 설정
 # SEARCH_QUERIES=["주식", "채권", "금융", "금리", "환율 및 외환 시장", "금융 규제", "경제 지표"]
 # DISPLAY_COUNT=10
 # START_INDEX=1
-# END_INDEX=300
+# END_INDEX=10
 # SORT_ORDER='sim'
+"""실행용 끝"""
 
-# 테스트용 : Naver news API 호출 시 설정
+"""테스트용 시작"""
+# 반복 시간 (분)
+ROOP_TIME = 2 
+
+# Naver news API 호출 시 설정
 SEARCH_QUERIES=["주식","채권","금융"]
 DISPLAY_COUNT=3
 START_INDEX=1
 END_INDEX=3
 SORT_ORDER='date'
+"""테스트용 끝"""
 
 # 로그 설정
 LOG_FILE='news_project.log'

@@ -6,7 +6,7 @@ from async_scrape_newspaper3k import main as scrape_main
 from summarize import summarize_news
 from database import create_tables
 from embed_news import get_data_and_store_chroma, http_chroma
-from config import setup_logging
+from config import setup_logging, ROOP_TIME
 import logging
 
 # 로그 설정
@@ -35,9 +35,8 @@ def scheduled_job():
     asyncio.run(run_pipeline())
 
 def main():
-    roop_time = 2
-    logging.info(f"프로그램 시작. {roop_time}분마다 실행됩니다.")
-    schedule.every(roop_time).minutes.do(scheduled_job)
+    logging.info(f"프로그램 시작. {ROOP_TIME}분마다 실행됩니다.")
+    schedule.every(ROOP_TIME).minutes.do(scheduled_job)
     
     # 즉시 첫 실행
     scheduled_job()
