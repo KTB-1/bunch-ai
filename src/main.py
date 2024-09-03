@@ -19,7 +19,7 @@ async def main():
     ## persistent client
     # get_data_and_store_chroma()
     ## http client
-    http_chroma()
+    # http_chroma()
 
 if __name__ == "__main__":
     asyncio.run(main())
