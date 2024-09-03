@@ -77,7 +77,7 @@ jobs:
         run: |
           sleep 20  # 애플리케이션 시작될 시간
           # 서버 상태 확인
-          HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}" http://${{ secrets.AWS_SSH_HOST }}:11434/)
+          HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}" http://${{ secrets.AWS_SSH_HOST }}:5000/)
           if [ "$HTTP_STATUS" -ne 200 ] && [ "$HTTP_STATUS" -ne 404 ]; then
             echo "Unexpected HTTP status: $HTTP_STATUS"
             exit 1
