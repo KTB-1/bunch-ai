@@ -6,12 +6,14 @@ import time
 # .env 파일 로드
 load_dotenv()
 
-# Naver news API 호출 시 설정
+# 실행용 : Naver news API 호출 시 설정
 # SEARCH_QUERIES=["주식", "채권", "금융", "금리", "환율 및 외환 시장", "금융 규제", "경제 지표"]
 # DISPLAY_COUNT=10
 # START_INDEX=1
 # END_INDEX=300
 # SORT_ORDER=sim
+
+# 테스트용 : Naver news API 호출 시 설정
 SEARCH_QUERIES=["주식"]
 DISPLAY_COUNT=5
 START_INDEX=1

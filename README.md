@@ -23,12 +23,12 @@
 ```
 SNSNE/
 ├── .vscode/                 # VS Code 설정 디렉토리
+├── .env                     # Naver News API(클라이언트 ID, key), DB 관련 설정 등 환경 변수 파일 (gitignore 파일)
 ├── database/                # DBeaver 사용 : 데이터베이스 관련 파일 디렉토리
 ├── img/                     # git readme에 올릴 이미지
 ├── notebooks/               # 데이터 분석 및 실험을 위한 Jupyter 노트북 디렉토리
 │   └── analysis.ipynb       # 분석용 Jupyter 노트북
 ├── src/                     # 소스 코드 디렉토리
-│   ├── .env                 # Naver News API(클라이언트 ID, key), DB 관련 설정 등 환경 변수 파일 (gitignore 파일)
 │   ├── async_scrape_ne...   # 뉴스 원문 스크래핑 파일 - 비동기로 속도 향상
 │   ├── config.py            # 설정 파일 (.env 파일에 저장된 환경 변수를 설정)
 │   ├── create_table.sql     # 테이블 생성 (News, UserNewsViews) - 현재, News 테이블만 사용됨
@@ -48,7 +48,7 @@ SNSNE/
 ![alt text](/img/image.png)
 
 ## 실행 방법
-0. 반드시 `src/.env` 파일을 받거나 만들어서 시작
+0. 반드시 `.env` 파일을 공유받거나 만들어서 시작
 
 1. python=3.10.11 가상환경 생성 후, requirements.txt 파일을 이용해 패키지 설치
     - requirements.txt로 패키지 설치가 안될 경우, `최후의수단.txt`로 라이브러리 직접 설치
@@ -98,7 +98,7 @@ SNSNE/
     - `src/test_db_get_summary.py`코드에서 summary 컬럼의 값을 가져와서 확인할 수 있습니다.
 
 ## 테스트 방법
-실행하는데 오래 걸릴 수 있으므로, `src/.env` 파일에서 해당 부분이 아래 설정으로 되어있는지 확인 후, 변경해줍니다.
+실행하는데 오래 걸릴 수 있으므로, `config.py` 파일에서 해당 부분이 아래 설정으로 되어있는지 확인 후, 변경해줍니다.
 ```
 # Naver news API 호출 시 설정
 SEARCH_QUERIES=["주식"]  # 검색할 키워드를 좁힘
