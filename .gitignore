@@ -27,6 +27,3 @@ desktop.ini
 *.bak
 *.swp
 *.tmp
-
-# DBeaver database 파일
-database/
