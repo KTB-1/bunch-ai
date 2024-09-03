@@ -11,13 +11,13 @@ load_dotenv()
 # DISPLAY_COUNT=10
 # START_INDEX=1
 # END_INDEX=300
-# SORT_ORDER=sim
+# SORT_ORDER='sim'
 
 # 테스트용 : Naver news API 호출 시 설정
-SEARCH_QUERIES=["주식"]
-DISPLAY_COUNT=5
+SEARCH_QUERIES=["주식","채권","금융"]
+DISPLAY_COUNT=3
 START_INDEX=1
-END_INDEX=5
+END_INDEX=3
 SORT_ORDER='date'
 
 # 로그 설정
@@ -61,3 +61,4 @@ MYSQL_DATABASE = os.getenv("MYSQL_DATABASE")
 # ChromaDB 설정
 CHROMADB_HOST = os.getenv("CHROMA_HOST", "localhost")
 CHROMADB_PORT = int(os.getenv("CHROMA_PORT", 8000))
+
