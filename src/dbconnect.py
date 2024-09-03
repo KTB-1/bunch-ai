@@ -41,6 +41,20 @@ def get_embedding_zero_rows():
     finally:
         engine.dispose()
 
+def test_get_1_rows():
+    engine = create_connection_mariadb()
+    
+    try:
+        # SQL 쿼리 실행
+        query = "SELECT * FROM News WHERE embedding = 1"
+        df = pd.read_sql(query, con=engine)
+        return df
+    except Exception as e:
+        logging.error(f"embedding 1인 데이터를 가져오는 중 오류 발생: {e}")
+        return None
+    finally:
+        engine.dispose()
+
 def get_and_update_embedding_zero_rows():
     engine = create_connection_mariadb()
     

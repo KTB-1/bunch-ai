@@ -10,7 +10,7 @@ from datetime import datetime
 from sqlalchemy import create_engine
 from dbconnect import create_connection_mariadb, get_embedding_zero_rows, get_and_update_embedding_zero_rows
 from dbconnect import get_userID_from_usernewsviews, get_user_news_views_data, insert_user_news_views_data
-from dbconnect import get_news_summaries_by_usernewsviews
+from dbconnect import get_news_summaries_by_usernewsviews, test_get_1_rows
 from database import get_decoded_summaries_modified_V1
 from datetime import datetime, timedelta
 from config import CHROMADB_HOST, CHROMADB_PORT
@@ -257,14 +257,14 @@ if __name__ == "__main__":
 
     # http_chroma()
 
-    http_recc_item(1, 3)
+    # http_recc_item(1, 3)
 
 
-    ## 임의로 usernewsview 테이블에 데이터 집어넣기
-    # df = get_embedding_zero_rows()
-    # print(df)
+    # 임의로 usernewsview 테이블에 데이터 집어넣기
+    df = test_get_1_rows()
+    print(df)
 
-    # if df is not None and len(df) > 0:
-    #     insert_user_news_views_data(df)
-    # else:
-    #     print("추가할 데이터가 없습니다.")
+    if df is not None and len(df) > 0:
+        insert_user_news_views_data(df)
+    else:
+        print("추가할 데이터가 없습니다.")
