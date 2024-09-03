@@ -14,7 +14,7 @@ def make_matrix():
     df['view_date'] = pd.to_datetime(df['view_date'], format='%Y-%m-%d %H:%M:%S')
 
     # 현재 시간으로부터 5일 전의 날짜 계산
-    cutoff_date = datetime.now() - timedelta(days=5)
+    cutoff_date = datetime.now() - timedelta(days=10)
 
     # 5일보다 오래된 날짜의 행 삭제
     df = df[df['view_date'] >= cutoff_date]
@@ -78,7 +78,7 @@ def recc_matrix(userid, cnt):
     
     return recommended_newsid
 
-recc_matrix(1, 3)
+# recc_matrix(1, 3)
 
 # userid 가 맵핑된 번호로 들어오면 오류 생길 수 있음 -> 고려해야함
 #
