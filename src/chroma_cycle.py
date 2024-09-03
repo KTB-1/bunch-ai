@@ -1,0 +1,1 @@
+# News database의 값을 chroma로 일정 주기로 올리는 코드 작성 필요
