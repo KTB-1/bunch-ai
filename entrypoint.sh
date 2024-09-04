@@ -16,6 +16,14 @@ echo "ollama 경로: $(which ollama)"
 # ollama 서버 시작 (백그라운드에서 실행)
 ollama serve &
 
+# ollama 서버가 실행될 때까지 대기
+echo "ollama 서버 준비 중..."
+while ! nc -z localhost $OLLAMA_PORT; do   
+  sleep 1
+done
+
+echo "ollama 서버가 준비되었습니다."
+
 # 모델이 존재하는지 확인하고, 없으면 다운로드
 if [ ! -f "$MODEL_FILE_1" ]; then
     echo "모델 $MODEL_FILE_1이 존재하지 않습니다. 다운로드를 시작합니다."
