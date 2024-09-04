@@ -18,7 +18,7 @@ ollama serve &
 
 # ollama 서버가 실행될 때까지 대기
 echo "ollama 서버 준비 중..."
-while ! nc -z localhost $OLLAMA_PORT; do   
+while ! curl -s http://localhost:$OLLAMA_PORT > /dev/null; do   
   sleep 1
 done
 
