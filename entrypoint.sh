@@ -13,6 +13,9 @@ fi
 # 설치된 ollama의 경로를 출력
 echo "ollama 경로: $(which ollama)"
 
+# ollama 서버 시작 (백그라운드에서 실행)
+ollama serve &
+
 # 모델이 존재하는지 확인하고, 없으면 다운로드
 if [ ! -f "$MODEL_FILE_1" ]; then
     echo "모델 $MODEL_FILE_1이 존재하지 않습니다. 다운로드를 시작합니다."
@@ -37,9 +40,6 @@ else
 fi
 
 echo "모든 필요한 모델이 준비되었습니다."
-
-# ollama 서버 시작 (백그라운드에서 실행)
-ollama serve &
 
 
 # 애플리케이션 실행
