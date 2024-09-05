@@ -8,9 +8,7 @@ pip install fake-useragent
 pip install psutil
 pip install chardet
 pip install langchain-community
-pip install chromadb
-pip install lightfm
-pip install pymysql
+pip install lightfm pymysql chromadb langchain_chroma
 pip install torch pandas langchain_ollama 
 pip install schedule
 
