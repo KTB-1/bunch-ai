@@ -22,13 +22,20 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
   
-    - name: Docker 이미지 빌드 및 푸시
+    - name: Docker 이미지 빌드 및 푸시 (ollama)
       run: |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/bunch-ai:latest .
-          docker push ${{ secrets.DOCKER_USERNAME }}/bunch-ai:latest
+        docker build -t ${{ secrets.DOCKER_USERNAME }}/bunch-ai-ollama:latest -f Dockerfile.ollama .
+        docker push ${{ secrets.DOCKER_USERNAME }}/bunch-ai-ollama:latest
+
+    - name: Docker 이미지 빌드 및 푸시 (app)
+      run: |
+        docker build -t ${{ secrets.DOCKER_USERNAME }}/bunch-ai-app:latest -f Dockerfile.app .
+        docker push ${{ secrets.DOCKER_USERNAME }}/bunch-ai-app:latest
+
     - name: Docker 이미지 정리
       run: |
-          docker image prune -f  # 빌드 후 사용하지 않는 이미지를 삭제
+        docker image prune -f  # 빌드 후 사용하지 않는 이미지를 삭제
+
 
   deploy:
     runs-on: ubuntu-latest
@@ -64,17 +71,16 @@ jobs:
             docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
 
             # 기존 컨테이너를 멈추고 제거
-            docker stop bunch-ai || true  # 컨테이너가 없으면 오류 무시
-            docker rm bunch-ai || true  # 컨테이너가 없으면 오류 무시
+            docker-compose down
 
-            docker pull ${{ secrets.DOCKER_USERNAME }}/bunch-ai:latest
+            docker pull ${{ secrets.DOCKER_USERNAME }}/bunch-ai-ollama:latest
+            docker pull ${{ secrets.DOCKER_USERNAME }}/bunch-ai-app:latest
 
             # 기존 이미지 제거
             docker image prune -f
-
-            docker run -d -p 5000:5000 --name bunch-ai --rm \
-              -v /root/models:/app/models \
-              ${{ secrets.DOCKER_USERNAME }}/bunch-ai:latest
+            
+            docker-compose up -d
+            
 
       - name: 컨테이너 실행 테스트
         run: |
