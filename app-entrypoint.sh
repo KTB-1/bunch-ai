@@ -1,5 +1,6 @@
 #!/bin/bash
 
+MODEL_DIR="/app/models"
 MODEL_FILE_1="$MODEL_DIR/gemma2_latest"
 MODEL_FILE_2="$MODEL_DIR/gemma2_2b"
 
