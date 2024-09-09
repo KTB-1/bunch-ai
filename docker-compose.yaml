@@ -7,6 +7,10 @@ services:
       - "11434:11434" 
     volumes:
       - /root/models:/app/models  # 호스트의 /root/models -> 컨테이너의 /app/models
+    environment:
+      - OLLAMA_HOST=http://0.0.0.0:11434
+    networks:
+      - my_network
 
   app:
     image: hyesushim/bunch-ai-app:latest
@@ -16,3 +20,9 @@ services:
       - "5000:5000"
     volumes:
       - /root/models:/app/models  # Flask 앱도 동일한 모델 디렉토리 마운트 (필요 시)
+    networks:
+      - my_network
+
+networks:
+  my_network:
+    driver: bridge

@@ -9,7 +9,7 @@ echo "사용할 Ollama 포트: $OLLAMA_PORT"
 
 # ollama 서버가 실행될 때까지 대기
 echo "ollama 서버 준비 중..."
-while ! curl -s http://localhost:$OLLAMA_PORT > /dev/null; do   
+while ! curl -s http://ollama:$OLLAMA_PORT > /dev/null; do 
   sleep 1
 done
 
