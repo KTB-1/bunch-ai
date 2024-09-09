@@ -68,6 +68,7 @@ jobs:
           key: ${{ secrets.AWS_SSH_KEY }}
           script_stop: true
           script: |
+            cd /root
             echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
 
             # 기존 컨테이너를 멈추고 제거
