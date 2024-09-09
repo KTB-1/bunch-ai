@@ -68,7 +68,9 @@ jobs:
           key: ${{ secrets.AWS_SSH_KEY }}
           script_stop: true
           script: |
-            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+            echo ${{ secrets.DOCKER_PASSWORD }}
+            echo ${{ secrets.DOCKER_USERNAME }}
+            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }} --password-stdin
 
             # 기존 컨테이너를 멈추고 제거
             docker-compose down
