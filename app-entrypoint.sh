@@ -1,5 +1,12 @@
 #!/bin/bash
 
+MODEL_FILE_1="$MODEL_DIR/gemma2_latest"
+MODEL_FILE_2="$MODEL_DIR/gemma2_2b"
+
+# OLLAMA_PORT 기본값 설정 (설정되지 않았을 경우)
+OLLAMA_PORT=${OLLAMA_PORT:-11434}
+echo "사용할 Ollama 포트: $OLLAMA_PORT"
+
 # ollama 서버가 실행될 때까지 대기
 echo "ollama 서버 준비 중..."
 while ! curl -s http://localhost:$OLLAMA_PORT > /dev/null; do   

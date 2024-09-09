@@ -3,7 +3,7 @@ FROM python:3.10.11-slim
 WORKDIR /app
 
 RUN apt-get update && \
-    apt-get install -y gcc
+    apt-get install -y gcc curl
 
 # requirements.txt 복사 및 의존성 설치
 COPY requirements.txt .

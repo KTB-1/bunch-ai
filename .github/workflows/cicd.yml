@@ -1,12 +1,12 @@
 name: CICD Pipeline
 
-on: [push]
-  # push:
-  #   branches:
-  #     - main
-  # pull_request:
-  #   branches:
-  #     - main
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build:
@@ -79,7 +79,7 @@ jobs:
             # 기존 이미지 제거
             docker image prune -f
             
-            docker-compose up -d
+            docker-compose up -d --build
             
 
       - name: 컨테이너 실행 테스트
