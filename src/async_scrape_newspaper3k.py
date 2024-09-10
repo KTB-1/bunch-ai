@@ -1,16 +1,14 @@
-import asyncio
-import aiohttp
+import requests
 from newspaper import Article
 from fake_useragent import UserAgent
 import psutil
 import time
 import chardet
-from concurrent.futures import ProcessPoolExecutor
 import logging
 import re
 import ssl
 from config import (
-    setup_logging, CONCURRENCY, CHUNK_SIZE, TIMEOUT, 
+    setup_logging, CHUNK_SIZE, TIMEOUT, 
     MAX_RETRIES, RETRY_DELAY
 )
 from database import get_news_without_content, update_news_content
@@ -22,37 +20,37 @@ setup_logging()
 # User-Agent 랜덤 생성기 설정
 ua = UserAgent()
 
-# SSL 컨텍스트 생성 함수
 def create_ssl_context():
     context = ssl.create_default_context()
-    context.set_ciphers('DEFAULT@SECLEVEL=1')  # 낮은 보안 수준의 암호도 허용
+    context.set_ciphers('DEFAULT@SECLEVEL=1')
     context.options |= ssl.OP_NO_SSLv2
     context.options |= ssl.OP_NO_SSLv3
     context.options |= ssl.OP_NO_TLSv1
     context.options |= ssl.OP_NO_TLSv1_1
     return context
 
-async def fetch(session, url, timeout=TIMEOUT, max_retries=MAX_RETRIES):
+def fetch(url, timeout=TIMEOUT, max_retries=MAX_RETRIES):
     ssl_context = create_ssl_context()
     for attempt in range(max_retries):
         try:
             headers = {'User-Agent': ua.random}
-            async with session.get(url, headers=headers, timeout=timeout, ssl=ssl_context) as response:
-                content = await response.read()
-                encoding = chardet.detect(content)['encoding'] or 'utf-8'
-                return content.decode(encoding, errors='replace')
-        except (asyncio.TimeoutError, aiohttp.ClientError, ssl.SSLError, ConnectionResetError) as e:
+            response = requests.get(url, headers=headers, timeout=timeout, verify=ssl_context)
+            response.raise_for_status()
+            content = response.content
+            encoding = chardet.detect(content)['encoding'] or 'utf-8'
+            return content.decode(encoding, errors='replace')
+        except (requests.Timeout, requests.RequestException, ssl.SSLError, ConnectionResetError) as e:
             logging.warning(f"{url}에 대한 오류 발생, 시도 {attempt + 1}/{max_retries}: {str(e)}")
             if isinstance(e, ssl.SSLError) and attempt < max_retries - 1:
                 ssl_context = ssl.create_default_context()
                 ssl_context.check_hostname = False
                 ssl_context.verify_mode = ssl.CERT_NONE
             if attempt < max_retries - 1:
-                await asyncio.sleep(RETRY_DELAY * (attempt + 1))  # 점진적으로 대기 시간 증가
+                time.sleep(RETRY_DELAY * (attempt + 1))
         except Exception as e:
             logging.error(f"{url}에 대한 예기치 않은 오류 발생: {str(e)}")
             if attempt < max_retries - 1:
-                await asyncio.sleep(RETRY_DELAY * (attempt + 1))
+                time.sleep(RETRY_DELAY * (attempt + 1))
     
     logging.error(f"{url}를 {max_retries}회 시도했으나 실패했습니다")
     return None
@@ -69,43 +67,30 @@ def parse_article(html, url):
             logging.error(f"{url}을(를) 파싱하는 데 실패했습니다: {str(e)}")
     return None
 
-async def extract_news_content(session, url):
+def extract_news_content(url):
     if not isinstance(url, str) or not url.startswith('http'):
         logging.warning(f"잘못된 URL: {url}")
         return None
 
-    html = await fetch(session, url)
+    html = fetch(url)
     if html:
-        loop = asyncio.get_running_loop()
-        with ProcessPoolExecutor() as pool:
-            return await loop.run_in_executor(pool, parse_article, html, url)
+        return parse_article(html, url)
     return None
 
-async def process_chunk(chunk, sem):
-    conn = aiohttp.TCPConnector(ssl=create_ssl_context(), limit=None)
-    async with aiohttp.ClientSession(connector=conn) as session:
-        tasks = [asyncio.ensure_future(scrape_with_semaphore(url, session, sem)) for url in chunk]
-        return await asyncio.gather(*tasks)
-
-async def scrape_with_semaphore(url, session, sem):
-    async with sem:
-        return await extract_news_content(session, url)
-
-async def scrape_urls(urls, chunk_size=CHUNK_SIZE, concurrency=CONCURRENCY):
+def scrape_urls(urls, chunk_size=CHUNK_SIZE):
     all_results = []
-    sem = asyncio.Semaphore(concurrency)
-
+    
     chunks = [urls[i:i+chunk_size] for i in range(0, len(urls), chunk_size)]
     
     for i, chunk in enumerate(chunks):
-        results = await process_chunk(chunk, sem)
+        results = [extract_news_content(url) for url in chunk]
         all_results.extend(results)
         
         logging.info(f"{len(urls)}개의 URL 중 {len(all_results)}개 처리 완료")
         logging.info(f"CPU 사용량: {psutil.cpu_percent()}%, Memory 사용량: {psutil.virtual_memory().percent}%")
         
         if i < len(chunks) - 1:
-            await asyncio.sleep(1)
+            time.sleep(1)
 
     return all_results
 
@@ -122,18 +107,18 @@ def clean_text(text):
     
     return text
 
-async def update_content_in_db():
+def update_content_in_db():
     urls_to_scrape = get_news_without_content()
     logging.info(f"스크랩할 URL 찾음 : {len(urls_to_scrape)}")
 
     if urls_to_scrape:
-        scraped_contents = await scrape_urls(urls_to_scrape)
+        scraped_contents = scrape_urls(urls_to_scrape)
         
         for url, content in zip(urls_to_scrape, scraped_contents):
             if content:
                 update_news_content(url, content)
 
-async def main():
+def main():
     start_time = time.time()
     logging.info("웹 스크래핑 프로세스 시작...")
 
@@ -145,7 +130,7 @@ async def main():
     failed_urls = []
 
     if urls_to_scrape:
-        scraped_contents = await scrape_urls(urls_to_scrape)
+        scraped_contents = scrape_urls(urls_to_scrape)
         
         for url, content in zip(urls_to_scrape, scraped_contents):
             if content:
@@ -180,4 +165,4 @@ async def main():
     logging.info(f"메모리 사용률: {psutil.virtual_memory().percent}%")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
