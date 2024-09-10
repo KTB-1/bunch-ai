@@ -10,7 +10,7 @@ from datetime import datetime
 from sqlalchemy import create_engine
 from dbconnect import create_connection_mariadb, get_embedding_zero_rows, get_and_update_embedding_zero_rows
 from dbconnect import get_userID_from_usernewsviews, get_user_news_views_data, insert_user_news_views_data
-from dbconnect import get_news_summaries_by_usernewsviews
+from dbconnect import get_news_summaries_by_usernewsviews, test_get_1_rows
 from database import get_decoded_summaries_modified_V1
 from datetime import datetime, timedelta
 from config import CHROMADB_HOST, CHROMADB_PORT
@@ -31,7 +31,7 @@ def get_data_and_store_chroma():
     embedding_model = OllamaEmbeddings(model='gemma2:2b')
 
     chroma_client = Chroma(
-        collection_name="news_embedding_testing_1",
+        collection_name="news_embedding_testing_3",
         embedding_function=embedding_model,
         collection_metadata={"hnsw:space":"cosine"},
         persist_directory="chroma_langchain_db",
@@ -64,19 +64,16 @@ def get_data_and_store_chroma():
 
 def recc_item(userid, cnt):
 
-    df = get_userID_from_usernewsviews(user_id=userid, k=cnt)
-    # print(df)
-
-    print(df.columns)
     ###
-    # view_date를 datetime 형식으로 변환
-    df['view_date'] = pd.to_datetime(df['view_date'], format='%Y-%m-%d %H:%M:%S')
+    df = get_userID_from_usernewsviews(user_id=userid, k=cnt)
 
-    # 현재 시간으로부터 5일 전의 날짜 계산
-    cutoff_date = datetime.now() - timedelta(days=5)
-
-    # 5일보다 오래된 날짜의 행 삭제
-    df = df[df['view_date'] >= cutoff_date]
+    if df is not None and not df.empty:
+        # view_date 형식을 datetime으로 변환하고 최신순으로 정렬
+        df['view_date'] = pd.to_datetime(df['view_date'], format='%Y-%m-%d %H:%M:%S')
+        df = df.sort_values(by='view_date', ascending=False)
+    else:
+        print("news sim null df, recc 0-cnt")
+        return list(range(0, cnt))
     ###
 
     ### result_list 로 가져오는 개수 조정 (date 에 따라서)
@@ -91,7 +88,7 @@ def recc_item(userid, cnt):
     embedding_model = OllamaEmbeddings(model="gemma2:2b")
 
     chroma_client = Chroma(
-        collection_name="news_embedding_testing_1",
+        collection_name="news_embedding_testing_3",
         embedding_function=embedding_model,
         collection_metadata={"hnsw:space":"cosine"},
         persist_directory="chroma_langchain_db",
@@ -103,7 +100,7 @@ def recc_item(userid, cnt):
         results = chroma_client.similarity_search_with_score(query=query, k=5)
         
         for i, (result, score) in enumerate(results, 1):
-            recc_list.append(int(result.metadata['news_id']))
+            recc_list.append((int(result.metadata['news_id']), score))
 
         # # 결과 출력
         # for i, (result, score) in enumerate(results, 1):
@@ -113,11 +110,13 @@ def recc_item(userid, cnt):
         #     print(f"Metadata: {result.metadata}")
         #     print()
 
-    recc_list = [item for item in recc_list if item not in check_same]
-    recc_list = list(set(recc_list))
-    # print(recc_list)
+    unseen_scores = [score for i, score in enumerate(recc_list) if i not in check_same]
+    unseen_scores.sort(key=lambda x: x[1], reverse=False)
 
-    return recc_list
+    top_items = [item[0] for item in unseen_scores]
+    top_items = remove_duplicates(top_items)
+
+    return top_items[:cnt]
 
 def http_chroma():
     summaries = get_decoded_summaries_modified_V1()
@@ -251,17 +250,17 @@ def http_recc_item(userid, cnt):
     # return recc_list
 
 if __name__ == "__main__":
-    # get_data_and_store_chroma()
+    get_data_and_store_chroma()
     
     # recc_item(1, 3)
 
     # http_chroma()
 
-    http_recc_item(1, 3)
+    # http_recc_item(1, 3)
 
 
-    ## 임의로 usernewsview 테이블에 데이터 집어넣기
-    # df = get_embedding_zero_rows()
+    # # 임의로 usernewsview 테이블에 데이터 집어넣기
+    # df = test_get_1_rows()
     # print(df)
 
     # if df is not None and len(df) > 0:

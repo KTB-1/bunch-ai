@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS News (
 
 CREATE TABLE IF NOT EXISTS UserNewsViews (
         view_id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id INT,
+        user_id VARCHAR(255),
         news_id INT,
         view_date VARCHAR(255),
         FOREIGN KEY (news_id) REFERENCES News(news_id)
@@ -23,3 +23,5 @@ CREATE TABLE IF NOT EXISTS UserNewsViews (
 
 -- 데이터만 삭제
 DELETE FROM News;
+
+userid, news_url, view_date
