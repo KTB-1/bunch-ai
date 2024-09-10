@@ -4,7 +4,7 @@ WORKDIR /app
 
 # 필요한 패키지 설치 및 업데이트
 RUN apt-get update && \
-    apt-get install -y gcc curl build-essential libreadline-dev && \
+    apt-get install -y gcc curl build-essential libreadline-dev libsqlite3-dev && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # SQLite 3.46.1 소스 다운로드 및 빌드
@@ -13,11 +13,11 @@ RUN curl -O https://www.sqlite.org/2024/sqlite-autoconf-3460100.tar.gz && \
     cd sqlite-autoconf-3460100 && \
     ./configure --prefix=/usr/local && \
     make && make install
-    
+
 # curl 및 ollama 설치
 RUN curl -fsSL https://ollama.com/install.sh | sh
 
-# requirements.txt 복사 및 의존성 설치
+# Python 패키지 설치 (ChromaDB 포함)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
