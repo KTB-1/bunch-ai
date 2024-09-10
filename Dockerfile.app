@@ -1,18 +1,11 @@
-FROM python:3.10.11-slim
+FROM python:3.11.9-slim
 
 WORKDIR /app
 
 # 필요한 패키지 설치 및 업데이트
 RUN apt-get update && \
-    apt-get install -y gcc curl build-essential libreadline-dev libsqlite3-dev && \
+    apt-get install -y gcc curl build-essential libreadline-dev && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# SQLite 3.46.1 소스 다운로드 및 빌드
-RUN curl -O https://www.sqlite.org/2024/sqlite-autoconf-3460100.tar.gz && \
-    tar xzf sqlite-autoconf-3460100.tar.gz && \
-    cd sqlite-autoconf-3460100 && \
-    ./configure --prefix=/usr/local && \
-    make && make install
 
 # curl 및 ollama 설치
 RUN curl -fsSL https://ollama.com/install.sh | sh
