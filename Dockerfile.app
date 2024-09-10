@@ -2,13 +2,13 @@ FROM python:3.10.11-slim
 
 WORKDIR /app
 
+# 필요한 패키지 설치 및 업데이트
 RUN apt-get update && \
-    apt-get install -y gcc curl
+    apt-get install -y gcc curl sqlite3 && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # curl 및 ollama 설치
-RUN apt-get update && apt-get install -y curl && \
-    curl -fsSL https://ollama.com/install.sh | sh && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN curl -fsSL https://ollama.com/install.sh | sh
 
 # requirements.txt 복사 및 의존성 설치
 COPY requirements.txt .
