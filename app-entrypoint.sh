@@ -5,15 +5,15 @@ MODEL_FILE_1="$MODEL_DIR/gemma2_latest"
 MODEL_FILE_2="$MODEL_DIR/gemma2_2b"
 
 # OLLAMA_PORT 기본값 설정 (설정되지 않았을 경우)
-OLLAMA_PORT=${OLLAMA_PORT:-11434}
-OLLAMA_HOST=${OLLAMA_HOST:-ollama}
-FULL_OLLAMA_HOST="${OLLAMA_HOST}:${OLLAMA_PORT}"
+# OLLAMA_PORT=${OLLAMA_PORT:-11434}
+# OLLAMA_HOST=${OLLAMA_HOST:-ollama}
+FULL_OLLAMA_HOST="http://ollama:11434"
 
 echo "사용할 Ollama 호스트: $FULL_OLLAMA_HOST"
 
 # ollama 서버가 실행될 때까지 대기
 echo "ollama 서버 준비 중..."
-while ! curl -s "http://$FULL_OLLAMA_HOST" > /dev/null; do 
+while ! curl -s "$FULL_OLLAMA_HOST" > /dev/null; do 
   sleep 1
 done
 
