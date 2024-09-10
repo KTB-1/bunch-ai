@@ -27,7 +27,7 @@ async def run_pipeline():
     logging.info("파이프라인 완료.")
     
     ## persistent client
-    # get_data_and_store_chroma()
+    get_data_and_store_chroma()
     ## http client
     # http_chroma()
 
