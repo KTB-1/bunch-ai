@@ -68,10 +68,21 @@ def get_recommendations():
     summaries = get_decoded_summaries(recommended_newsid)
     
     # 결과 반환
-    return jsonify({"recommendations": summaries})
+    recommendations_str = ""
+    for rec in summaries:
+        recommendations_str += f"Title: {rec['title']}\n"
+        recommendations_str += f"URL: {rec['news_url']}\n"
+        recommendations_str += f"Insight: {rec['summary']['insight']}\n"
+        recommendations_str += f"Point 1: {rec['summary']['point_1']}\n"
+        recommendations_str += f"Point 2: {rec['summary']['point_2']}\n"
+        recommendations_str += f"Point 3: {rec['summary']['point_3']}\n"
+        recommendations_str += "\n"
+    return recommendations_str
+    # response_text = f"User {userid}, here are your {cnt} recommendations:\n"
+    # return response_text
 
 # 앱 실행
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)
 
 # curl -X POST -H "Content-Type: application/json" -d '{"userid": 1, "cnt": 3}' http://localhost:5000/get_recommendations
