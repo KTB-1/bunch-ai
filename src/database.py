@@ -18,7 +18,7 @@ class News(Base):
     
     news_id = Column(Integer, primary_key=True, autoincrement=True)
     category = Column(Text)
-    news_url = Column(String(255))
+    news_url = Column(String(255), unique=True)
     title = Column(String(255))
     description = Column(Text)
     content = Column(Text)
@@ -161,11 +161,103 @@ def get_decoded_summaries_modified_V1():
         logging.error(f"데이터베이스 조회/업데이트 오류: {e}")
         raise
 
+def delete_news_entry(url):
+    try:
+        with db_manager.get_session() as session:
+            news = session.query(News).filter_by(news_url=url).first()
+            if news:
+                session.delete(news)
+                session.commit()
+                logging.info(f"뉴스 항목이 삭제됨: {url}")
+            else:
+                logging.warning(f"삭제할 뉴스를 찾을 수 없음: {url}")
+    except SQLAlchemyError as e:
+        logging.error(f"데이터베이스에서 {url} 삭제 중 오류 발생: {str(e)}")
+        raise
+
 def close_database():
     db_manager.close()
+
+def get_summary_lengths():
+    try:
+        with db_manager.get_session() as session:
+            news_list = session.query(News).filter(
+                News.summary.isnot(None),
+                News.summary != ''
+            ).all()
+
+            summary_lengths = []
+            for news in news_list:
+                try:
+                    summary = json.loads(news.summary)
+                    lengths = {
+                        'news_id': news.news_id,
+                        'point_1_length': len(summary.get('point_1', '')),
+                        'point_2_length': len(summary.get('point_2', '')),
+                        'point_3_length': len(summary.get('point_3', '')),
+                        'insight_length': len(summary.get('insight', ''))
+                    }
+                    summary_lengths.append(lengths)
+                except json.JSONDecodeError as e:
+                    logging.error(f"JSON 디코딩 오류 (news_id: {news.news_id}): {e}")
+
+            return summary_lengths
+    except SQLAlchemyError as e:
+        logging.error(f"데이터베이스 조회 오류: {e}")
+        raise
 
 # 메인 실행 부분 (테스트용)
 if __name__ == "__main__":
     init_database()
-    # 여기에 필요한 테스트 코드를 추가할 수 있습니다.
+    # 테스트: summary 길이 가져오기
+    summary_lengths = get_summary_lengths()
+    
+    for item in summary_lengths:
+        print(f"News ID: {item['news_id']}")
+        print(f"Point 1 length: {item['point_1_length']}")
+        print(f"Point 2 length: {item['point_2_length']}")
+        print(f"Point 3 length: {item['point_3_length']}")
+        print(f"Insight length: {item['insight_length']}")
+        print("---")
+
+    # 각 포인트와 인사이트의 길이를 저장할 리스트 초기화
+    point_1_lengths = []
+    point_2_lengths = []
+    point_3_lengths = []
+    insight_lengths = []
+
+    # 데이터에서 각 길이를 추출하여 리스트에 추가
+    for item in summary_lengths:
+        point_1_lengths.append(item['point_1_length'])
+        point_2_lengths.append(item['point_2_length'])
+        point_3_lengths.append(item['point_3_length'])
+        insight_lengths.append(item['insight_length'])
+
+    # 평균 계산 함수
+    def calculate_average(lengths):
+        return sum(lengths) / len(lengths)
+
+    # 각 포인트와 인사이트의 평균 길이 계산
+    avg_point_1 = calculate_average(point_1_lengths)
+    avg_point_2 = calculate_average(point_2_lengths)
+    avg_point_3 = calculate_average(point_3_lengths)
+    avg_insight = calculate_average(insight_lengths)
+
+    # 결과 출력
+    print(f"point_1의 평균 길이: {avg_point_1:.2f}")
+    print(f"point_2의 평균 길이: {avg_point_2:.2f}")
+    print(f"point_3의 평균 길이: {avg_point_3:.2f}")
+    print(f"insight의 평균 길이: {avg_insight:.2f}")
+    
+    # 최대 길이 계산
+    max_point_1 = max(point_1_lengths)
+    max_point_2 = max(point_2_lengths)
+    max_point_3 = max(point_3_lengths)
+    max_insight = max(insight_lengths)
+
+    # 결과 출력
+    print(f"point_1의 최대 길이: {max_point_1}")
+    print(f"point_2의 최대 길이: {max_point_2}")
+    print(f"point_3의 최대 길이: {max_point_3}")
+    print(f"insight의 최대 길이: {max_insight}")
     close_database()

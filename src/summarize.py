@@ -1,17 +1,19 @@
-from langchain_community.llms import Ollama
-from langchain.prompts import PromptTemplate
-from langchain.output_parsers import ResponseSchema, StructuredOutputParser
 import json
 from database import get_news_without_summary, update_news_summary
 from config import setup_logging
 import logging
 import time
+from dotenv import load_dotenv
+import openai
+import os
+from openai import OpenAI
 
 # 로깅 설정
 setup_logging()
 
-# Ollama를 사용하여 Gemma2 모델 초기화
-model = Ollama(model="gemma2:latest")
+# OpenAI API 키 설정
+load_dotenv()
+openai.api_key = os.getenv('OPENAI_API_KEY')
 
 # 템플릿 문자열 정의
 template_string = """
@@ -31,24 +33,7 @@ point_3 : 추출한 주요 포인트 중 세번째를 작성하세요.
 insight: 기사 전체를 고려하여 독자에게 가장 유용할 수 있는 한 줄 인사이트를 도출하세요. 인사이트는 기사의 함의나 잠재적 영향을 포함할 수 있습니다.
 
 뉴스 기사: {text}
-
-{format_instructions}
 """
-
-# 출력 결과의 output format
-response_schemas = [
-    ResponseSchema(name="point_1", description="추출한 주요 포인트 중 첫번째를 작성하세요."),
-    ResponseSchema(name="point_2", description="추출한 주요 포인트 중 두번째를 작성하세요."),
-    ResponseSchema(name="point_3", description="추출한 주요 포인트 중 세번째를 작성하세요."),
-    ResponseSchema(name="insight", description="기사 전체를 고려하여 독자에게 가장 유용할 수 있는 한 줄 인사이트를 도출하세요. 인사이트는 기사의 함의나 잠재적 영향을 포함할 수 있습니다.")
-]
-
-# output parser 지정
-output_parser = StructuredOutputParser.from_response_schemas(response_schemas)
-format_instructions = output_parser.get_format_instructions()
-
-# ChatPromptTemplate 정의
-prompt_template = PromptTemplate.from_template(template_string)
 
 def summarize_news():
     logging.info("=" * 50)
@@ -58,11 +43,30 @@ def summarize_news():
     for news in news_items:
         news_content = news.description if news.content == 'failed' else news.content
         
-        formatted_prompt = prompt_template.format(text=news_content, format_instructions=format_instructions)
+        # 템플릿 문자열을 대화 내용으로 완성
+        formatted_prompt = template_string.format(text=news_content)
         
         try:
-            customer_response = model.invoke(formatted_prompt)
-            output_dict = output_parser.parse(customer_response)
+            client = OpenAI(
+            api_key=openai.api_key,
+            )
+
+            # OpenAI ChatGPT API를 호출하여 응답 받기
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant. Response in json format"},
+                    {"role": "user", "content": formatted_prompt}
+                ],
+                # response_format 지정하기
+                response_format = {"type":"json_object"}
+            )
+
+            # 응답 메시지를 추출
+            customer_response = response.choices[0].message.content
+            print(customer_response)
+            # JSON 형식으로 파싱
+            output_dict = json.loads(customer_response)
             summary_json = json.dumps(output_dict)
             update_news_summary(news.news_id, summary_json)
             logging.info(f"뉴스 ID {news.news_id}의 요약 처리 및 업데이트 완료")

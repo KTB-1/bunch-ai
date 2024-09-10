@@ -11,7 +11,7 @@ from config import (
     setup_logging, CHUNK_SIZE, TIMEOUT, 
     MAX_RETRIES, RETRY_DELAY
 )
-from database import get_news_without_content, update_news_content
+from database import get_news_without_content, update_news_content, delete_news_entry
 from collections import Counter
 
 # 로그 설정
@@ -133,14 +133,14 @@ def main():
         scraped_contents = scrape_urls(urls_to_scrape)
         
         for url, content in zip(urls_to_scrape, scraped_contents):
-            if content:
+            if content and len(content) > 500:
                 update_news_content(url, content)
                 logging.info(f"URL 업데이트 완료: {url}")
                 results['success'] += 1
             else:
-                update_news_content(url, "failed")  # content에 "failed" 표시
-                logging.warning(f"콘텐츠를 가져오지 못했습니다: {url}")
-                results['fail'] += 1
+                delete_news_entry(url)
+                logging.warning(f"콘텐츠가 없거나 500자 이하여서 삭제됨: {url}")
+                results['deleted'] += 1
                 failed_urls.append(url)
 
     total_time = time.time() - start_time
@@ -151,12 +151,12 @@ def main():
     logging.info(f"총 처리 시간: {total_time:.2f} 초")
     logging.info(f"총 URL 수: {total_urls}")
     logging.info(f"성공: {results['success']}")
-    logging.info(f"실패: {results['fail']}")
+    logging.info(f"삭제됨: {results['deleted']}")
     logging.info(f"성공률: {success_rate:.2f}%")
     logging.info("=" * 50)
 
     if failed_urls:
-        logging.info("실패한 URL 목록:")
+        logging.info("삭제된 URL 목록:")
         for url in failed_urls:
             logging.info(url)
         logging.info("=" * 50)
