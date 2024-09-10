@@ -65,6 +65,7 @@ def fetch_all_news():
     """
     모든 검색어에 대해 뉴스 데이터를 가져와 데이터베이스에 저장합니다.
     """
+    logging.info("News API로 가져올 뉴스 데이터를 검색합니다.")
     for query in SEARCH_QUERIES:
         fetch_news(query)
     logging.info("모든 뉴스 데이터가 데이터베이스에 저장되었습니다.")
