@@ -79,7 +79,7 @@ def recc_item(userid, cnt):
     ### result_list 로 가져오는 개수 조정 (date 에 따라서)
     result_list = get_news_summaries_by_usernewsviews(df)
     result_list = result_list[:5]
-    # print(result_list)
+
     
     check_same = []
     for it, tmp in enumerate(result_list):
@@ -110,7 +110,10 @@ def recc_item(userid, cnt):
         #     print(f"Metadata: {result.metadata}")
         #     print()
 
-    unseen_scores = [score for i, score in enumerate(recc_list) if i not in check_same]
+    unseen_scores = []
+    for i, score in enumerate(recc_list):
+        if score[0] not in check_same:
+            unseen_scores.append(score)
     unseen_scores.sort(key=lambda x: x[1], reverse=False)
 
     top_items = [item[0] for item in unseen_scores]
