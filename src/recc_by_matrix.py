@@ -38,18 +38,18 @@ def make_matrix():
     model = LightFM(loss='bpr')
     model.fit(interactions, epochs=30, num_threads=2)
 
-    return model, interactions, dataset, pivot_df, user_id_map
+    return model, interactions, dataset, pivot_df, user_id_map, news_id_map
 
 
 # 추천 함수
-def recommend_lightfm(model, userid, interactions, dataset, pivot_df, user_id_map, top_n=10):
+def recommend_lightfm(model, userid, interactions, dataset, pivot_df, user_id_map, news_id_map, top_n=10):
     # userid가 문자열인 경우 매핑된 정수형 인덱스로 변환
     user_id_index = None
     for k, v in user_id_map.items():
         if v == userid:
             user_id_index = k
             break
-    
+
     if user_id_index is None:
         raise ValueError(f"UserID '{userid}' not found in the dataset")
 
@@ -68,20 +68,17 @@ def recommend_lightfm(model, userid, interactions, dataset, pivot_df, user_id_ma
     top_items = [item[0] for item in unseen_scores[:top_n]]
 
     # 뉴스 아이디 맵핑 복구
-    newsid_map = dataset.mapping()[2]
-    reverse_newsid_map = {v: k for k, v in newsid_map.items()}
-    recommended_newsid = [reverse_newsid_map[item] for item in top_items]
-
+    recommended_newsid = [news_id_map[item] for item in top_items]
     return recommended_newsid
 
 
 def recc_matrix(userid, cnt):
-    (model, interactions, dataset, pivot_df, user_id_map) = make_matrix()
+    (model, interactions, dataset, pivot_df, user_id_map, news_id_map) = make_matrix()
 
     if model is None:
         return list(range(0, cnt))
 
-    recommended_newsid = recommend_lightfm(model, userid, interactions, dataset, pivot_df, user_id_map, top_n=cnt)
+    recommended_newsid = recommend_lightfm(model, userid, interactions, dataset, pivot_df, user_id_map, news_id_map, top_n=cnt)
 
     return recommended_newsid
 
