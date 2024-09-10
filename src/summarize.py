@@ -54,7 +54,10 @@ def summarize_news():
     logging.info("=" * 50)
     logging.info("뉴스 요약 프로세스 시작..")
     news_items = get_news_without_summary()
-    
+    if not news_items:
+        logging.info("요약할 뉴스가 없습니다.")
+        return
+
     for news in news_items:
         news_content = news.description if news.content == 'failed' else news.content
         

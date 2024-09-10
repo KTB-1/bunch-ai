@@ -109,13 +109,16 @@ def update_news_content(news_url, content):
 def get_news_without_summary():
     try:
         with db_manager.get_session() as session:
-            return session.query(News).filter(
+            news_items = session.query(News).filter(
                 (News.summary == None) | (News.summary == ''),
                 News.content != None
             ).all()
+            if not news_items:
+                logging.info(f"요약할 뉴스가 없습니다. news_items = {news_items}")
+            return news_items
     except SQLAlchemyError as e:
         logging.error(f"데이터베이스 조회 오류: {e}")
-        raise
+        return []   # 오류 발생 시 빈 리스트 반환
 
 def update_news_summary(news_id, summary):
     try:
