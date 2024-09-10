@@ -45,5 +45,6 @@ fi
 echo "모든 필요한 모델이 준비되었습니다."
 
 # 애플리케이션 실행
-echo "Python 애플리케이션을 시작합니다..."
-python3 src/main.py
+echo "Python  ㅍ합니다..."
+python3 src/app.py & 
+python3 src/main.py 
