@@ -9,19 +9,20 @@ from dbconnect import get_user_news_views_data
 def make_matrix():
     df = get_user_news_views_data()
 
-    ###
+    if df is None or df.empty:
+        return None, None, None, None
+
     # view_date를 datetime 형식으로 변환
     df['view_date'] = pd.to_datetime(df['view_date'], format='%Y-%m-%d %H:%M:%S')
 
-    # 현재 시간으로부터 5일 전의 날짜 계산
-    cutoff_date = datetime.now() - timedelta(days=10)
-
-    # 5일보다 오래된 날짜의 행 삭제
-    df = df[df['view_date'] >= cutoff_date]
-    ###
-
     # 사용자가 뉴스를 봤음을 나타내기 위해 view_date를 1로 설정
     df['view_date'] = 1
+
+    # user_id와 news_id를 각각 정수형 인덱스로 변환 (그리고 매핑 정보 저장)
+    user_id_map = dict(enumerate(df['user_id'].astype('category').cat.categories))
+    df['user_id'] = df['user_id'].astype('category').cat.codes
+    news_id_map = dict(enumerate(df['news_id'].astype('category').cat.categories))
+    df['news_id'] = df['news_id'].astype('category').cat.codes
 
     # Pivot table 생성
     pivot_df = df.pivot_table(index='user_id', columns='news_id', values='view_date', fill_value=0)
@@ -30,36 +31,40 @@ def make_matrix():
     dataset = Dataset()
     dataset.fit(df['user_id'].unique(), df['news_id'].unique())
 
-    (interactions, weights) = dataset.build_interactions([(x['user_id'], x['news_id'], x['view_date']) for index, x in df.iterrows()])
+    # 상호작용 데이터 생성
+    interactions, weights = dataset.build_interactions([(x['user_id'], x['news_id'], x['view_date']) for index, x in df.iterrows()])
 
     # 모델 학습 (BPR)
     model = LightFM(loss='bpr')
     model.fit(interactions, epochs=30, num_threads=2)
 
-    return model, interactions, dataset, pivot_df
+    return model, interactions, dataset, pivot_df, user_id_map
+
 
 # 추천 함수
-def recommend_lightfm(model, userid, interactions, dataset, pivot_df, top_n=10):
-    # 함수 내의 userid, newsid는 0-indexed
-    # dataframe의 userid, newsid는 1-indexed
-    n_users, n_items = interactions.shape
+def recommend_lightfm(model, userid, interactions, dataset, pivot_df, user_id_map, top_n=10):
+    # userid가 문자열인 경우 매핑된 정수형 인덱스로 변환
+    user_id_index = None
+    for k, v in user_id_map.items():
+        if v == userid:
+            user_id_index = k
+            break
+    
+    if user_id_index is None:
+        raise ValueError(f"UserID '{userid}' not found in the dataset")
 
     # 모든 뉴스에 대한 점수를 예측
-    scores = model.predict(userid - 1, np.arange(n_items))
-    # print(scores)
+    n_users, n_items = interactions.shape
+    scores = model.predict(user_id_index, np.arange(n_items))
 
     # 사용자가 이미 본 뉴스 아이디 가져오기
-    user_interactions = pivot_df.loc[userid]
+    user_interactions = pivot_df.loc[user_id_index]
     seen_newsid = user_interactions[user_interactions > 0].index.tolist()
-    seen_newsid = [x - 1 for x in seen_newsid]
-    # print(seen_newsid)
 
-    # 이미 본 뉴스 아이디는 제외하고 상위 추천 리스트 생성
+    # 상위 N개 추천 (이미 본 뉴스 제외)
     unseen_scores = [(i, score) for i, score in enumerate(scores) if i not in seen_newsid]
     unseen_scores.sort(key=lambda x: x[1], reverse=True)
-    # print(unseen_scores)
 
-    # 상위 N개 추천
     top_items = [item[0] for item in unseen_scores[:top_n]]
 
     # 뉴스 아이디 맵핑 복구
@@ -69,14 +74,17 @@ def recommend_lightfm(model, userid, interactions, dataset, pivot_df, top_n=10):
 
     return recommended_newsid
 
-def recc_matrix(userid, cnt):
-    userID = userid
-    topK = cnt
 
-    (model, interactions, dataset, pivot_df) = make_matrix()
-    recommended_newsid = recommend_lightfm(model, userID, interactions, dataset, pivot_df, top_n=topK)
-    
+def recc_matrix(userid, cnt):
+    (model, interactions, dataset, pivot_df, user_id_map) = make_matrix()
+
+    if model is None:
+        return list(range(0, cnt))
+
+    recommended_newsid = recommend_lightfm(model, userid, interactions, dataset, pivot_df, user_id_map, top_n=cnt)
+
     return recommended_newsid
+
 
 # recc_matrix(1, 3)
 
