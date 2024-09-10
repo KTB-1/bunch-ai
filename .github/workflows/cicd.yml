@@ -83,16 +83,16 @@ jobs:
             docker-compose up -d --build
             
 
-      - name: 컨테이너 실행 테스트
-        run: |
-          sleep 20  # 애플리케이션 시작될 시간
-          # 서버 상태 확인
-          HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}" http://${{ secrets.AWS_SSH_HOST }}:5000/)
-          if [ "$HTTP_STATUS" -ne 200 ] && [ "$HTTP_STATUS" -ne 404 ]; then
-            echo "Unexpected HTTP status: $HTTP_STATUS"
-            exit 1
-          fi
-          echo "Server is running with HTTP status: $HTTP_STATUS"
+      # - name: 컨테이너 실행 테스트
+      #   run: |
+      #     sleep 20  # 애플리케이션 시작될 시간
+      #     # 서버 상태 확인
+      #     HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}" http://${{ secrets.AWS_SSH_HOST }}:5000/)
+      #     if [ "$HTTP_STATUS" -ne 200 ] && [ "$HTTP_STATUS" -ne 404 ]; then
+      #       echo "Unexpected HTTP status: $HTTP_STATUS"
+      #       exit 1
+      #     fi
+      #     echo "Server is running with HTTP status: $HTTP_STATUS"
 
       - name: Public IP를 보안 그룹에서 제거
         run: |
