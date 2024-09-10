@@ -1,262 +1,174 @@
-import mysql.connector
-from mysql.connector import Error
-from config import MYSQL_HOST, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE
+from sqlalchemy import create_engine, Column, Integer, String, Text, ForeignKey
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.exc import SQLAlchemyError
+from config import MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE, setup_logging
 import logging
 import json
 
-def create_connection():
-    connection = None
-    try:
-        connection = mysql.connector.connect(
-            host=MYSQL_HOST,
-            user=MYSQL_USER,
-            passwd=MYSQL_PASSWORD,
-            database=MYSQL_DATABASE,
-            charset='utf8mb4',
-            collation='utf8mb4_general_ci'
-        )
-        logging.info("MariaDB 데이터베이스 연결 성공")
-    except Error as e:
-        logging.error(f"데이터베이스 연결 오류: {e}")
-    return connection
+# 로그 설정
+setup_logging()
 
-def create_tables():
-    connection = create_connection()
-    if connection is None:
-        return
+# SQLAlchemy 기본 클래스 정의
+Base = declarative_base()
 
-    cursor = connection.cursor()
+# News 모델 정의
+class News(Base):
+    __tablename__ = 'News'
+    
+    news_id = Column(Integer, primary_key=True, autoincrement=True)
+    category = Column(Text)
+    news_url = Column(String(255))
+    title = Column(String(255))
+    description = Column(Text)
+    content = Column(Text)
+    summary = Column(Text)
+    publication_date = Column(String(255))
+    embedding = Column(Integer)
 
-    # News 테이블 생성
-    create_news_table = """
-    CREATE TABLE IF NOT EXISTS News (
-        news_id INT AUTO_INCREMENT PRIMARY KEY,
-        category TEXT,
-        news_url VARCHAR(255),
-        title VARCHAR(255),
-        description TEXT,
-        content TEXT,
-        summary TEXT,
-        publication_date VARCHAR(255),
-        embedding INT
-    )
-    """
+# UserNewsViews 모델 정의
+class UserNewsViews(Base):
+    __tablename__ = 'UserNewsViews'
+    
+    view_id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(String(255))
+    news_id = Column(Integer, ForeignKey('News.news_id'))
+    view_date = Column(String(255))
 
-    # UserNewsViews 테이블 생성
-    create_user_news_views_table = """
-    CREATE TABLE IF NOT EXISTS UserNewsViews (
-        view_id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id VARCHAR(255),
-        news_id INT,
-        view_date VARCHAR(255),
-        FOREIGN KEY (news_id) REFERENCES News(news_id)
-    )
-    """
+class DatabaseManager:
+    def __init__(self):
+        self.engine = None
+        self.SessionLocal = None
 
-    try:
-        cursor.execute(create_news_table)
-        cursor.execute(create_user_news_views_table)
-        connection.commit()
-        logging.info("News테이블과 UserNewsViews테이블이 생성되었습니다 (이미 존재할 경우 제외).")
-    except Error as e:
-        logging.error(f"테이블 생성 오류: {e}")
-    finally:
-        if connection.is_connected():
-            cursor.close()
-            connection.close()
-            logging.info("MySQL 연결이 닫혔습니다.")
+    def init_db(self):
+        connection_string = f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}"
+        self.engine = create_engine(connection_string, pool_pre_ping=True)
+        self.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
+
+    def create_tables(self):
+        Base.metadata.create_all(bind=self.engine)
+        logging.info("테이블이 생성되었습니다 (이미 존재할 경우 무시됩니다).")
+
+    def get_session(self):
+        return self.SessionLocal()
+
+    def close(self):
+        if self.engine:
+            self.engine.dispose()
+
+db_manager = DatabaseManager()
+
+def init_database():
+    db_manager.init_db()
+    db_manager.create_tables()
 
 def save_news_to_database(news_data):
-    connection = create_connection()
-    if connection is None:
-        return
-
-    cursor = connection.cursor()
-
-    # 중복 체크 및 삽입 SQL
-    check_duplicate = "SELECT COUNT(*) FROM News WHERE news_url = %s"
-    insert_news = """
-    INSERT INTO News (category, news_url, title, description, publication_date)
-    VALUES (%s, %s, %s, %s, %s)
-    """
-
     try:
-        for news_item in news_data:
-            # 중복 체크
-            cursor.execute(check_duplicate, (news_item[1],))  # news_url은 두 번째 항목
-            result = cursor.fetchone()
-            if result[0] == 0:  # 중복되지 않은 경우에만 삽입
-                cursor.execute(insert_news, news_item)
-                logging.info(f"새 뉴스 항목이 추가됨: {news_item[2]}")  # 제목 로깅
-            else:
-                logging.info(f"중복된 뉴스 항목 무시됨: {news_item[2]}")  # 제목 로깅
-
-        connection.commit()
-        logging.info("뉴스 데이터 저장 완료")
-    except Error as e:
-        logging.error(f"데이터 저장 오류: {e}")
-    finally:
-        if connection.is_connected():
-            cursor.close()
-            connection.close()
-            logging.info("MySQL 연결이 닫혔습니다.")
+        with db_manager.get_session() as session:
+            for news_item in news_data:
+                existing_news = session.query(News).filter_by(news_url=news_item[1]).first()
+                if not existing_news:
+                    new_news = News(
+                        category=news_item[0],
+                        news_url=news_item[1],
+                        title=news_item[2],
+                        description=news_item[3],
+                        publication_date=news_item[4]
+                    )
+                    session.add(new_news)
+                    logging.info(f"새 뉴스 항목이 추가됨: {news_item[2]}")
+                else:
+                    logging.info(f"중복된 뉴스 항목 무시됨: {news_item[2]}")
+            session.commit()
+    except SQLAlchemyError as e:
+        logging.error(f"데이터베이스 오류 발생: {e}")
+        raise
 
 def get_news_without_content():
-    connection = create_connection()
-    if connection is None:
-        return []
-
-    cursor = connection.cursor()
-    query = "SELECT news_url FROM News WHERE content IS NULL OR content = ''"
-
     try:
-        cursor.execute(query)
-        results = cursor.fetchall()
-        return [result[0] for result in results]
-    except Error as e:
-        logging.error(f"DB 데이터 조회 오류: {e}")
-        return []
-    finally:
-        if connection.is_connected():
-            cursor.close()
-            connection.close()
+        with db_manager.get_session() as session:
+            return [news.news_url for news in session.query(News).filter((News.content == None) | (News.content == '')).all()]
+    except SQLAlchemyError as e:
+        logging.error(f"데이터베이스 조회 오류: {e}")
+        raise
 
 def update_news_content(news_url, content):
-    connection = create_connection()
-    if connection is None:
-        return
-
-    cursor = connection.cursor()
-    query = "UPDATE News SET content = %s WHERE news_url = %s"
-
     try:
-        cursor.execute(query, (content, news_url))
-        connection.commit()
-        logging.info(f"뉴스 내용 DB에 업데이트 완료: {news_url}")
-    except Error as e:
-        logging.error(f"DB 데이터 업데이트 오류: {e}")
-    finally:
-        if connection.is_connected():
-            cursor.close()
-            connection.close()
+        with db_manager.get_session() as session:
+            news = session.query(News).filter_by(news_url=news_url).first()
+            if news:
+                news.content = content
+                session.commit()
+                logging.info(f"뉴스 내용 DB에 업데이트 완료: {news_url}")
+            else:
+                logging.error(f"업데이트할 뉴스를 찾을 수 없음: {news_url}")
+    except SQLAlchemyError as e:
+        logging.error(f"데이터베이스 업데이트 오류: {e}")
+        raise
 
 def get_news_without_summary():
-    connection = create_connection()
-    if connection is None:
-        return []
-
-    cursor = connection.cursor(dictionary=True)
-    query = """
-    SELECT news_id, content, description
-    FROM News
-    WHERE (summary IS NULL OR summary = '') AND content IS NOT NULL
-    """
     try:
-        cursor.execute(query)
-        return cursor.fetchall()
-    except Error as e:
-        logging.error(f"데이터 조회 오류: {e}")
-        return []
-    finally:
-        if connection.is_connected():
-            cursor.close()
-            connection.close()
+        with db_manager.get_session() as session:
+            news_items = session.query(News).filter(
+                (News.summary == None) | (News.summary == ''),
+                News.content != None
+            ).all()
+            if not news_items:
+                logging.info(f"요약할 뉴스가 없습니다. news_items = {news_items}")
+            return news_items
+    except SQLAlchemyError as e:
+        logging.error(f"데이터베이스 조회 오류: {e}")
+        return []   # 오류 발생 시 빈 리스트 반환
 
 def update_news_summary(news_id, summary):
-    connection = create_connection()
-    if connection is None:
-        return
-
-    cursor = connection.cursor()
-    query = "UPDATE News SET summary = %s WHERE news_id = %s"
-
     try:
-        cursor.execute(query, (summary, news_id))
-        connection.commit()
-        logging.info(f"뉴스 요약 업데이트 완료: ID {news_id}")
-    except Error as e:
-        logging.error(f"데이터 업데이트 오류: {e}")
-    finally:
-        if connection.is_connected():
-            cursor.close()
-            connection.close()
-
-def get_decoded_summaries():
-    connection = create_connection()
-    if connection is None:
-        return []
-
-    cursor = connection.cursor(dictionary=True)
-    query = "SELECT news_id, summary FROM News WHERE summary IS NOT NULL AND summary != ''"
-
-    try:
-        cursor.execute(query)
-        results = cursor.fetchall()
-        decoded_summaries = []
-        for row in results:
-            try:
-                decoded_summary = json.loads(row['summary'])
-                decoded_summaries.append({
-                    'news_id': row['news_id'],
-                    'summary': decoded_summary
-                })
-            except json.JSONDecodeError as e:
-                logging.error(f"JSON 디코딩 오류 (news_id: {row['news_id']}): {e}")
-        return decoded_summaries
-    except Error as e:
-        logging.error(f"데이터 조회 오류: {e}")
-        return []
-    finally:
-        if connection.is_connected():
-            cursor.close()
-            connection.close()
+        with db_manager.get_session() as session:
+            news = session.query(News).filter_by(news_id=news_id).first()
+            if news:
+                news.summary = summary
+                session.commit()
+                logging.info(f"뉴스 요약 업데이트 완료: ID {news_id}")
+            else:
+                logging.error(f"업데이트할 뉴스를 찾을 수 없음: ID {news_id}")
+    except SQLAlchemyError as e:
+        logging.error(f"데이터베이스 업데이트 오류: {e}")
+        raise
 
 def get_decoded_summaries_modified_V1():
-    connection = create_connection()
-    if connection is None:
-        return []
-
-    cursor = connection.cursor(dictionary=True)
-    query = """
-        SELECT news_id, summary 
-        FROM News 
-        WHERE summary IS NOT NULL 
-        AND summary != '' 
-        AND (embedding = 0 OR embedding IS NULL)
-    """
-
     try:
-        cursor.execute(query)
-        results = cursor.fetchall()
+        with db_manager.get_session() as session:
+            news_list = session.query(News).filter(
+                News.summary != None,
+                News.summary != '',
+                (News.embedding == 0) | (News.embedding == None)
+            ).all()
 
-        if not results:
-            return None
+            if not news_list:
+                return None
 
-        decoded_summaries = []
+            decoded_summaries = []
+            for news in news_list:
+                try:
+                    decoded_summary = json.loads(news.summary)
+                    decoded_summaries.append({
+                        'news_id': news.news_id,
+                        'summary': decoded_summary
+                    })
+                    news.embedding = 1
+                except json.JSONDecodeError as e:
+                    logging.error(f"JSON 디코딩 오류 (news_id: {news.news_id}): {e}")
+            
+            session.commit()
+            return decoded_summaries
+    except SQLAlchemyError as e:
+        logging.error(f"데이터베이스 조회/업데이트 오류: {e}")
+        raise
 
-        for row in results:
-            try:
-                decoded_summary = json.loads(row['summary'])
-                decoded_summaries.append({
-                    'news_id': row['news_id'],
-                    'summary': decoded_summary
-                })
-                
-                # embedding 값을 1로 업데이트
-                update_query = "UPDATE News SET embedding = 1 WHERE news_id = %s"
-                cursor.execute(update_query, (row['news_id'],))
-                connection.commit()
-                
-            except json.JSONDecodeError as e:
-                logging.error(f"JSON 디코딩 오류 (news_id: {row['news_id']}): {e}")
-        
-        return decoded_summaries
+def close_database():
+    db_manager.close()
 
-    except Error as e:
-        logging.error(f"데이터 조회 오류: {e}")
-        return []
-
-    finally:
-        if connection.is_connected():
-            cursor.close()
-            connection.close()
+# 메인 실행 부분 (테스트용)
+if __name__ == "__main__":
+    init_database()
+    # 여기에 필요한 테스트 코드를 추가할 수 있습니다.
+    close_database()

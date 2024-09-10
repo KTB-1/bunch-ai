@@ -66,7 +66,6 @@ langchain-text-splitters==0.2.2
 langgraph==0.2.18
 langgraph-checkpoint==1.0.9
 langsmith==0.1.105
-lightfm==1.17
 lxml==5.3.0
 lxml_html_clean==0.2.0
 markdown-it-py==3.0.0
@@ -157,3 +156,4 @@ Werkzeug==3.0.4
 wrapt==1.16.0
 yarl==1.9.4
 zipp==3.20.1
+lightfm==1.17

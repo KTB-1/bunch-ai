@@ -83,6 +83,6 @@ def get_recommendations():
 
 # 앱 실행
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
 
 # curl -X POST -H "Content-Type: application/json" -d '{"userid": 1, "cnt": 3}' http://localhost:5000/get_recommendations
