@@ -3,10 +3,12 @@ from flask_sqlalchemy import SQLAlchemy
 import pymysql
 import json
 from config import MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE
+from datetime import datetime
 from recc_by_matrix import recc_matrix
 from embed_news import recc_item, http_recc_item
-from dbconnect import get_decoded_summaries
+from dbconnect import get_decoded_summaries, create_connection_mariadb, update_db_get_by_full
 import numpy as np
+import random
 
 app = Flask(__name__)
 
@@ -21,6 +23,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{user}:{password}@{hos
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
+
+pre_fill = datetime(2024, 9, 1)
 
 # News 모델 정의
 class News(db.Model):
@@ -38,19 +42,27 @@ class News(db.Model):
 # API 엔드포인트 정의
 @app.route('/get_recommendations', methods=['POST'])
 def get_recommendations():
+    global pre_fill
+
     data = request.get_json()
     userid = data.get('userid')
     cnt = data.get('cnt', 5)  # 기본값으로 5개 추천
-    
+    print(userid, cnt)
     if userid is None:
         return jsonify({"error": "userid is required"}), 400
     
+    engine = create_connection_mariadb()
+    pre_fill = update_db_get_by_full(engine, pre_fill)
+    print(f"Updated pre_fill: {pre_fill}")
+    
     # 추천 리스트 가져오기
     recommended_newsid1 = recc_matrix(userid, cnt)
-    # recommended_newsid2 = recc_item(userid, cnt)
-    recommended_newsid2 = http_recc_item(userid, cnt)
+    recommended_newsid2 = recc_item(userid, cnt)
+    print(userid, recommended_newsid1, recommended_newsid2)
+    # recommended_newsid2 = http_recc_item(userid, cnt)
 
     tmp_newsid = recommended_newsid1 + recommended_newsid2
+    tmp_newsid = random.sample(tmp_newsid, cnt)
     recommended_newsid = list(set(tmp_newsid))
 
     summaries = get_decoded_summaries(recommended_newsid)
