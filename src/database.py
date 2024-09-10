@@ -46,7 +46,7 @@ def create_tables():
     create_user_news_views_table = """
     CREATE TABLE IF NOT EXISTS UserNewsViews (
         view_id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id INT,
+        user_id VARCHAR(255),
         news_id INT,
         view_date VARCHAR(255),
         FOREIGN KEY (news_id) REFERENCES News(news_id)
@@ -228,6 +228,10 @@ def get_decoded_summaries_modified_V1():
     try:
         cursor.execute(query)
         results = cursor.fetchall()
+
+        if not results:
+            return None
+
         decoded_summaries = []
 
         for row in results:
