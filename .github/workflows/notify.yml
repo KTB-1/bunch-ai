@@ -1,0 +1,34 @@
+name: Discord Notification
+
+on: 
+  workflow_run:
+    workflows: [CICD Pipeline]
+    types: [completed]
+
+
+jobs:
+  on-success:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    
+    steps:
+    - uses: sarisia/actions-status-discord@v1.14.7
+      with:
+        webhook: ${{ secrets.DISCORD_WEBHOOK_AI }}
+        title: "✅ CI/CD success ✅"
+        url: ${{ github.event.workflow_run.html_url }}
+        color: 0x00FF00
+
+        
+  on-failure:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    
+    steps:
+    - uses: sarisia/actions-status-discord@v1.14.7
+      with:
+        webhook: ${{ secrets.DISCORD_WEBHOOK_AI }}
+        title: "❌ CI/CD failed ❌"
+        url: ${{ github.event.workflow_run.html_url }}
+        color: 0xFF0000
+  

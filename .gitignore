@@ -27,3 +27,5 @@ desktop.ini
 *.bak
 *.swp
 *.tmp
+
+myenv/
