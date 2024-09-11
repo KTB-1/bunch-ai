@@ -79,7 +79,6 @@ def recc_item(userid, cnt):
     ### result_list 로 가져오는 개수 조정 (date 에 따라서)
     result_list = get_news_summaries_by_usernewsviews(df)
     result_list = result_list[:5]
-
     
     check_same = []
     for it, tmp in enumerate(result_list):
