@@ -6,7 +6,7 @@ from config import MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DAT
 from datetime import datetime
 from recc_by_matrix import recc_matrix
 from embed_news import recc_item, http_recc_item
-from dbconnect import get_decoded_summaries, create_connection_mariadb, update_db_get_by_full
+from dbconnect import get_decoded_summaries, create_connection_mariadb, update_db_get_by_full, create_connection_fulldb
 import numpy as np
 import random
 
@@ -51,8 +51,9 @@ def get_recommendations():
     if userid is None:
         return jsonify({"error": "userid is required"}), 400
     
-    engine = create_connection_mariadb()
-    pre_fill = update_db_get_by_full(engine, pre_fill)
+    engine_full = create_connection_fulldb()
+    engine_ai = create_connection_mariadb()
+    pre_fill = update_db_get_by_full(engine_full, engine_ai, pre_fill)
     print(f"Updated pre_fill: {pre_fill}")
     
     # 추천 리스트 가져오기
