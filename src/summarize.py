@@ -54,9 +54,12 @@ def summarize_news():
     logging.info("=" * 50)
     logging.info("뉴스 요약 프로세스 시작..")
     news_items = get_news_without_summary()
-    
+    if not news_items:
+        logging.info("요약할 뉴스가 없습니다.")
+        return
+
     for news in news_items:
-        news_content = news['description'] if news['content'] == 'failed' else news['content']
+        news_content = news.description if news.content == 'failed' else news.content
         
         formatted_prompt = prompt_template.format(text=news_content, format_instructions=format_instructions)
         
@@ -64,10 +67,10 @@ def summarize_news():
             customer_response = model.invoke(formatted_prompt)
             output_dict = output_parser.parse(customer_response)
             summary_json = json.dumps(output_dict)
-            update_news_summary(news['news_id'], summary_json)
-            logging.info(f"뉴스 ID {news['news_id']}의 요약 처리 및 업데이트 완료")
+            update_news_summary(news.news_id, summary_json)
+            logging.info(f"뉴스 ID {news.news_id}의 요약 처리 및 업데이트 완료")
         except Exception as e:
-            logging.error(f"뉴스 ID {news['news_id']} 처리 중 오류 발생: {e}")
+            logging.error(f"뉴스 ID {news.news_id} 처리 중 오류 발생: {e}")
 
 
 if __name__ == "__main__":
