@@ -4,7 +4,7 @@ from sqlalchemy.orm import sessionmaker
 import random
 from datetime import datetime, timedelta
 import logging
-from config import MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE
+from config import MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE, FULLSTACK_DATABASE
 from config import setup_logging
 import json
 
@@ -26,7 +26,27 @@ def create_connection_mariadb():
     # SQLAlchemy 엔진 생성
     engine = create_engine(connection_string)
 
-    logging.info("MariaDB 데이터베이스 연결 성공")
+    logging.info("aiDB 데이터베이스 연결 성공")
+
+    return engine
+
+def create_connection_fulldb():
+    # MariaDB 연결 정보 설정
+    user = MYSQL_USER
+    password = MYSQL_PASSWORD
+    host = MYSQL_HOST
+    port = MYSQL_PORT
+    database_name = FULLSTACK_DATABASE
+
+    connection = None
+
+    # SQLAlchemy 연결 문자열 생성
+    connection_string = f"mysql+pymysql://{user}:{password}@{host}:{port}/{database_name}"
+
+    # SQLAlchemy 엔진 생성
+    engine = create_engine(connection_string)
+
+    logging.info("fullstackDB 데이터베이스 연결 성공")
 
     return engine
 
@@ -311,18 +331,20 @@ def insert_fullstack_dummy(engine, num_records=20):
     session.commit()
     session.close()
 
-def update_db_get_by_full(engine, pre_fill):
-    Session = sessionmaker(bind=engine)
-    session = Session()
+def update_db_get_by_full(engine_full, engine_ai, pre_fill):
+    Session_full = sessionmaker(bind=engine_full)
+    session_full = Session_full()
+    Session_ai = sessionmaker(bind=engine_ai)
+    session_ai = Session_ai()
 
     # 테이블 정의 (이미 테이블이 정의되어 있다고 가정)
     metadata = MetaData()
-    urls = Table('urls', metadata, autoload_with=engine)
-    news = Table('News', metadata, autoload_with=engine)
-    user_news_views = Table('UserNewsViews', metadata, autoload_with=engine)
+    urls = Table('urls', metadata, autoload_with=engine_full)
+    news = Table('News', metadata, autoload_with=engine_ai)
+    user_news_views = Table('UserNewsViews', metadata, autoload_with=engine_ai)
 
     # 1. URLs 테이블에서 is_deleted가 0이고, pre_fill 이후에 생성된 데이터를 조회
-    recent_urls_query = session.query(urls).filter(
+    recent_urls_query = session_full.query(urls).filter(
         urls.c.is_deleted == 0,
         urls.c.created_at > pre_fill
     )
@@ -332,7 +354,7 @@ def update_db_get_by_full(engine, pre_fill):
     # 2. News 테이블과 URL을 비교하여 처리
     for url_data in recent_urls:
         # News 테이블에서 url과 일치하는 데이터 조회
-        news_match = session.query(news).filter(news.c.news_url == url_data.url).first()
+        news_match = session_ai.query(news).filter(news.c.news_url == url_data.url).first()
 
         if news_match:
             # 일치하는 뉴스 데이터가 있는 경우 UserNewsViews 테이블에 삽입
@@ -341,26 +363,29 @@ def update_db_get_by_full(engine, pre_fill):
                 news_id=news_match.news_id,
                 view_date=url_data.created_at  # created_at을 view_date로 사용
             )
-            session.execute(insert_query)
+            session_ai.execute(insert_query)
 
     # pre_fill 업데이트: 함수가 끝난 시점의 시간으로 업데이트
     pre_fill = datetime.now()
 
     # 변경사항 커밋
-    session.commit()
-    session.close()
+    session_full.commit()
+    session_full.close()
+    session_ai.commit()
+    session_ai.close()
 
     # pre_fill 값을 반환하여 main 함수에서 사용
     return pre_fill
 
 def main():
-    # engine = create_connection_mariadb()
+    # engine = create_connection_fulldb()
     # create_fullstack_table(engine)  # 테이블이 없는 경우에만 실행
     # insert_fullstack_dummy(engine, num_records=20)  # 100개의 더미 데이터 생성
     # print('test')
     pre_fill = datetime(2024, 9, 1)  # 초기 pre_fill 값 설정
-    engine = create_connection_mariadb()
-    pre_fill = update_db_get_by_full(engine, pre_fill)
+    engine_full = create_connection_fulldb()
+    engine_ai = create_connection_mariadb()
+    pre_fill = update_db_get_by_full(engine_full, engine_ai, pre_fill)
     print(f"Updated pre_fill: {pre_fill}")
 
 

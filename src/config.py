@@ -67,6 +67,7 @@ MYSQL_PORT = int(os.getenv("DB_PORT", 3306))
 MYSQL_USER = os.getenv("MYSQL_USER")
 MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD")
 MYSQL_DATABASE = os.getenv("MYSQL_DATABASE")
+FULLSTACK_DATABASE = os.getenv("FULLSTACK_DATABASE")
 
 # ChromaDB 설정
 CHROMADB_HOST = os.getenv("CHROMA_HOST", "localhost")

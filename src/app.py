@@ -6,7 +6,7 @@ from config import MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DAT
 from datetime import datetime
 from recc_by_matrix import recc_matrix
 from embed_news import recc_item, http_recc_item
-from dbconnect import get_decoded_summaries, create_connection_mariadb, update_db_get_by_full
+from dbconnect import get_decoded_summaries, create_connection_mariadb, update_db_get_by_full, create_connection_fulldb
 import numpy as np
 import random
 
@@ -51,8 +51,9 @@ def get_recommendations():
     if userid is None:
         return jsonify({"error": "userid is required"}), 400
     
-    engine = create_connection_mariadb()
-    pre_fill = update_db_get_by_full(engine, pre_fill)
+    engine_full = create_connection_fulldb()
+    engine_ai = create_connection_mariadb()
+    pre_fill = update_db_get_by_full(engine_full, engine_ai, pre_fill)
     print(f"Updated pre_fill: {pre_fill}")
     
     # 추천 리스트 가져오기
@@ -68,18 +69,17 @@ def get_recommendations():
     summaries = get_decoded_summaries(recommended_newsid)
     
     # 결과 반환
-    recommendations_str = ""
-    for rec in summaries:
-        recommendations_str += f"Title: {rec['title']}\n"
-        recommendations_str += f"URL: {rec['news_url']}\n"
-        recommendations_str += f"Insight: {rec['summary']['insight']}\n"
-        recommendations_str += f"Point 1: {rec['summary']['point_1']}\n"
-        recommendations_str += f"Point 2: {rec['summary']['point_2']}\n"
-        recommendations_str += f"Point 3: {rec['summary']['point_3']}\n"
-        recommendations_str += "\n"
-    return recommendations_str
-    # response_text = f"User {userid}, here are your {cnt} recommendations:\n"
-    # return response_text
+    # recommendations_str = ""
+    # for rec in summaries:
+    #     recommendations_str += f"Title: {rec['title']}\n"
+    #     recommendations_str += f"URL: {rec['news_url']}\n"
+    #     recommendations_str += f"Insight: {rec['summary']['insight']}\n"
+    #     recommendations_str += f"Point 1: {rec['summary']['point_1']}\n"
+    #     recommendations_str += f"Point 2: {rec['summary']['point_2']}\n"
+    #     recommendations_str += f"Point 3: {rec['summary']['point_3']}\n"
+    #     recommendations_str += "\n"
+    # return recommendations_str
+    return jsonify({"recommendations": summaries})
 
 # 앱 실행
 if __name__ == '__main__':
