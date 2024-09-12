@@ -10,7 +10,7 @@ def make_matrix():
     df = get_user_news_views_data()
 
     if df is None or df.empty:
-        return None, None, None, None
+        return None, None, None, None, None, None
 
     # view_date를 datetime 형식으로 변환
     df['view_date'] = pd.to_datetime(df['view_date'], format='%Y-%m-%d %H:%M:%S')
