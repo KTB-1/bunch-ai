@@ -65,9 +65,11 @@ jobs:
           script: |
             echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
 
-            # 기존 컨테이너를 멈추고 제거
-            docker stop bunch-ai
-            docker rm bunch-ai
+            # 기존 컨테이너가 있는지 확인하고 중지 및 제거
+            if [ "$(docker ps -q -f name=bunch-ai)" ]; then
+              docker stop bunch-ai
+              docker rm bunch-ai
+            fi
 
             docker pull ${{ secrets.DOCKER_USERNAME }}/bunch-ai:latest
 
