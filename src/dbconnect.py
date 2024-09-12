@@ -375,6 +375,8 @@ def update_db_get_by_full(engine_full, engine_ai, pre_fill):
     session_ai.close()
 
     # pre_fill 값을 반환하여 main 함수에서 사용
+    print("UserNewsViews 테이블에 데이터가 성공적으로 추가되었습니다.", pre_fill)
+
     return pre_fill
 
 def main():
