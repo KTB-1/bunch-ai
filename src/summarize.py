@@ -3,7 +3,7 @@ from langchain.prompts import PromptTemplate
 from langchain.output_parsers import ResponseSchema, StructuredOutputParser
 import json
 from database import get_news_without_summary, update_news_summary
-from config import setup_logging
+from config import setup_logging, OLLAMA_BASE_URL
 import logging
 import time
 
@@ -11,7 +11,10 @@ import time
 setup_logging()
 
 # Ollama를 사용하여 Gemma2 모델 초기화
-model = Ollama(model="gemma2:latest")
+model = Ollama(
+    base_url=OLLAMA_BASE_URL,
+    model="gemma2:latest"
+)
 
 # 템플릿 문자열 정의
 template_string = """

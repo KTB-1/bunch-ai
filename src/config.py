@@ -73,3 +73,5 @@ FULLSTACK_DATABASE = os.getenv("FULLSTACK_DATABASE")
 CHROMADB_HOST = os.getenv("CHROMA_HOST", "localhost")
 CHROMADB_PORT = int(os.getenv("CHROMA_PORT", 8000))
 
+# Ollama URL 설정
+OLLAMA_BASE_URL=os.getenv("OLLAMA_BASE_URL", "localhost")

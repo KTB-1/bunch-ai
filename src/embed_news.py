@@ -13,7 +13,7 @@ from dbconnect import get_userID_from_usernewsviews, get_user_news_views_data, i
 from dbconnect import get_news_summaries_by_usernewsviews, test_get_1_rows
 from database import get_decoded_summaries_modified_V1
 from datetime import datetime, timedelta
-from config import CHROMADB_HOST, CHROMADB_PORT
+from config import CHROMADB_HOST, CHROMADB_PORT, OLLAMA_BASE_URL
 
 def remove_duplicates(lst):
     seen = set()
@@ -28,7 +28,10 @@ def get_data_and_store_chroma():
     
     summaries = get_decoded_summaries_modified_V1()
 
-    embedding_model = OllamaEmbeddings(model='gemma2:2b')
+    embedding_model = OllamaEmbeddings(
+        base_url=OLLAMA_BASE_URL,
+        model='gemma2:2b'
+    )
 
     chroma_client = Chroma(
         collection_name="news_embedding_testing_3",
@@ -84,7 +87,10 @@ def recc_item(userid, cnt):
     for it, tmp in enumerate(result_list):
         check_same.append(tmp['news_id'])
  
-    embedding_model = OllamaEmbeddings(model="gemma2:2b")
+    embedding_model = OllamaEmbeddings(
+        base_url=OLLAMA_BASE_URL,
+        model='gemma2:2b'
+    )
 
     chroma_client = Chroma(
         collection_name="news_embedding_testing_3",
@@ -123,7 +129,10 @@ def recc_item(userid, cnt):
 def http_chroma():
     summaries = get_decoded_summaries_modified_V1()
 
-    embedding_model = OllamaEmbeddings(model='gemma2:2b')
+    embedding_model = OllamaEmbeddings(
+        base_url=OLLAMA_BASE_URL,
+        model='gemma2:2b'
+    )
 
     # HTTP 클라이언트 초기화
     chroma_client = chromadb.HttpClient(
@@ -203,7 +212,10 @@ def http_recc_item(userid, cnt):
     for it, tmp in enumerate(result_list):
         check_same.append(tmp['news_id'])
  
-    embedding_model = OllamaEmbeddings(model="gemma2:2b")
+    embedding_model = OllamaEmbeddings(
+        base_url=OLLAMA_BASE_URL,
+        model='gemma2:2b'
+    )
 
     # HTTP 클라이언트 초기화
     chroma_client = chromadb.HttpClient(
